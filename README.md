@@ -16,15 +16,77 @@ There is plugins out there that use the Raspberry Pi GPIO functions to send and 
 All of this prompted me to create a plugin that doesn't have these issues. The Arduino Micro is a cheap piece of hardware and believe me if you played around with 433MHz switches and HomeKit, you will definitely appreciate the rock-solid performance of the external receiver and sender.
 
 ### Why use TWO Arduinos?
-Depending on your setup you can use only a receiver or only a sender as well. But then you will only be able to send or receive. Using two Arduinos ensures that all switches being pressed are properly received and all switch signals are properly broadcast, even when
+Depending on your setup you can use only a receiver or only a sender as well. But then you will only be able to send or receive. Using two Arduinos ensures that all switches being pressed are properly received and all switch signals are properly broadcast, even when many devices are controlled.
 
 ### Supported switches
 Most 433 MHz switches should work, heres a list of ones I or others tried:
 - Etekcity 5-port power plug
 - Intertechno YWT-800 switch
-- Intertechne CMR-1000 actuator
+- Intertechno CMR-1000 actuator
 
 ## Installation
+
+### On the Arduinos
+You will need two Arduino Micro devices. Other Arduinos should work too but you might have to adapt the pin numbers accordingly. I like the Micro because of its size and relative power.
+
+You will also need a 433MHz sender/receiver pair. For the sender you can use basically any 433MHz modeule (e.g FS1000A). For the receiver the very cheap modules didn't work properly for me, try to get the "superheterodyne" (NOT superregeneration) receiver as it works MUCH better.
+
+#### Installation
+1. Install the Arduino IDE in your computer (http://arduino.cc)
+2. Install the "rc-switch" library in the Arduino IDE (https://github.com/sui77/rc-switch)
+3. Connect a 433 MHz receiver to pin 3 and power on one Arduino Micro, this will be your receiver (serial_port_in)
+4. Connect a 433 MHz sender to pin 4 and power on one Arduino Micro, this will be your sender (serial_port_out)
+5. Tie pin 3 to ground on the sender Arduino so it doesn't accidentally receive data from the floating pin.
+3. Install the code below on both Arduino Micro devices
+```
+  #include <RCSwitch.h>
+
+  RCSwitch mySwitch = RCSwitch();
+  String dash = "/";
+
+  void setup() {
+    Serial.begin(9600);
+    Serial.setTimeout(100);
+    mySwitch.enableReceive(0);  // Receiver on interrupt 0 => that is pin #3 on micro
+    mySwitch.enableTransmit(4); // Actual Pin 4
+    mySwitch.setRepeatTransmit(5);
+  }
+
+  String getValue(String data, char separator, int index) {
+    int found = 0;
+    int strIndex[] = {0, -1};
+    int maxIndex = data.length()-1;
+    for(int i=0; i<=maxIndex && found<=index; i++){
+      if(data.charAt(i)==separator || i==maxIndex){
+        found++;
+        strIndex[0] = strIndex[1]+1;
+        strIndex[1] = (i == maxIndex) ? i+1 : i;
+      }
+    }
+    return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
+  }
+
+  void loop() {
+    if (Serial.available()) {
+      String input = Serial.readString();
+      long value = getValue(input, '/', 0).toInt();
+      long pulse = getValue(input, '/', 1).toInt();
+      mySwitch.setPulseLength(pulse);
+      mySwitch.send(value, 24);
+      Serial.println("OK");
+    }
+
+    if (mySwitch.available()) {
+      long value = mySwitch.getReceivedValue();
+      long pulse = mySwitch.getReceivedDelay();
+      if (value != 0) {
+        String out = value + dash + pulse;
+        Serial.println( out );
+      }
+      mySwitch.resetAvailable();
+    }
+  }
+```
 
 ### On the homebridge server
 #### Install software
@@ -81,15 +143,6 @@ Most 433 MHz switches should work, heres a list of ones I or others tried:
    ]
  }
 
-```
-
-### On the Arduinos
-#### Installation
-1. Install the Arduino IDE in your computer (http://arduino.cc)
-2. Install the "rcswitch" library in the Arduino IDE
-3. Install the code below on two Arduino Micro devices
-```
-Dis be code for da arduino
 ```
 
 ## Credits
