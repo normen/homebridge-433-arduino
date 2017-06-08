@@ -18,7 +18,7 @@ There is plugins out there that use the Raspberry Pi GPIO functions to send and 
 All of this prompted me to create a plugin that doesn't have these issues. The Arduino Micro is a cheap piece of hardware and believe me if you played around with 433MHz switches and HomeKit, you will definitely appreciate the rock-solid performance of the external receiver and sender.
 
 ### Why use TWO Arduinos?
-Depending on your setup you can use only a receiver or only a sender as well. But then you will only be able to send or receive. Using two Arduinos ensures that all switches being pressed are properly received and all switch signals are properly broadcast, even when many devices are controlled.
+Depending on your setup you can use only a receiver or only a sender as well. But then you will only be able to send or receive. You can also use one Arduino to do both sending and receiving but I would not recommend doing that. Using two Arduinos ensures that all switches being pressed are properly received and all switch signals are properly broadcast, even when many devices are controlled.
 
 ### Supported switches
 Most 433 MHz switches should work, heres a list of ones I or others tried:
@@ -98,9 +98,9 @@ You will also need a 433MHz sender/receiver pair. For the sender you can use bas
 
 #### Configure config.json
 
-`serial_port_in`, `serial_port_out` is the USB ports you have your Arduinos connected to, normally /dev/ttyACM0 and /dev/ttyACM1 on Raspberry Pi. If you leave any one of these out of your configuration the plugin will simply not receive or send data. So you can use it to only send or only receive data.
+`serial_port_in`, `serial_port_out` is the USB ports you have your Arduinos connected to, normally /dev/ttyACM0 and /dev/ttyACM1 on Raspberry Pi. If you leave any one of these out of your configuration the plugin will simply not receive or send data so you can use it to only send or only receive data. If you set both to the same name one Arduino will be used both for sending and receiving data (not recommended).
 
-`switches` is the list of configured switches. When Homebridge is running the console will show the needed code and pulse values for any received 433MHz signals it can decode so you can find them out there and enter them in your config file.
+`switches` is the list of configured switches. When Homebridge is running the console will show the needed code and pulse values for any received 433MHz signals it can decode so you can find them there and enter them in your config.json file.
 
  ```javascript
  {
@@ -116,7 +116,7 @@ You will also need a 433MHz sender/receiver pair. For the sender you can use bas
        "platform": "ArduinoRCSwitch",
        "name": "Arduino RC Switch Platform",
        "serial_port_in": "/dev/ttyACM0",
- 			 "serial_port_out": "/dev/ttyACM1",
+       "serial_port_out": "/dev/ttyACM1",
        "switches": [
          {
            "name" : "My Device",

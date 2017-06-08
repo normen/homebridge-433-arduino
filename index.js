@@ -1,7 +1,6 @@
 var Service, Characteristic, LastUpdate;
 
-var serialport = require('serialport');
-var SerialPort = serialport.SerialPort;
+var SerialPort = require('serialport');
 var blockPort;
 var inPort;
 var outPort;
@@ -36,24 +35,35 @@ function ArduinoSwitchPlatform(log, config) {
     var self = this;
     self.config = config;
     self.log = log;
-    if(self.config.serial_port_in){
+    if(config.serial_port_in == config.serial_port_out){
         inPort = new SerialPort(self.config.serial_port_in, {
             baudRate: 9600,
-            parser: serialport.parsers.readline("\n")
+            parser: SerialPort.parsers.readline("\n")
         });
-    }
-    if(self.config.serial_port_out){
-        outPort = new SerialPort(self.config.serial_port_out, {
-            baudRate: 9600,
-            parser: serialport.parsers.readline("\n")
-        });
+        outPort = inPort;
         blockPort = new Device(outPort);
+    }
+    else{
+        if(self.config.serial_port_in){
+            inPort = new SerialPort(self.config.serial_port_in, {
+                baudRate: 9600,
+                parser: SerialPort.parsers.readline("\n")
+            });
+        }
+        if(self.config.serial_port_out){
+            outPort = new SerialPort(self.config.serial_port_out, {
+                baudRate: 9600,
+                parser: SerialPort.parsers.readline("\n")
+            });
+            blockPort = new Device(outPort);
+        }
     }
 }
 ArduinoSwitchPlatform.prototype.listen = function() {
     var self = this;
     if(!self.config.serial_port_in) return;
     var serialCallBack = function(data) {
+        if(data.startsWith("OK")) return;
         var content = data.split('/');
         var value = content[0];
         if(content.length == 2){
@@ -148,7 +158,7 @@ function Device (serial) {
     this._busy = false;
     var device = this;
     serial.on('data', function (data) {
-        device.processQueue();
+        if(data.startsWith("OK")) device.processQueue();
     });
 }
 Device.prototype.send = function (data, callback) {
