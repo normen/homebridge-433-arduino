@@ -36,18 +36,23 @@ function ArduinoSwitchPlatform(log, config) {
     var self = this;
     self.config = config;
     self.log = log;
-    inPort = new SerialPort(self.config.serial_port_in, {
-        baudRate: 9600,
-        parser: serialport.parsers.readline("\n")
-    });
-    outPort = new SerialPort(self.config.serial_port_out, {
-        baudRate: 9600,
-        parser: serialport.parsers.readline("\n")
-    });
-    blockPort = new Device(outPort);
+    if(self.config.serial_port_in){
+        inPort = new SerialPort(self.config.serial_port_in, {
+            baudRate: 9600,
+            parser: serialport.parsers.readline("\n")
+        });
+    }
+    if(self.config.serial_port_out){
+        outPort = new SerialPort(self.config.serial_port_out, {
+            baudRate: 9600,
+            parser: serialport.parsers.readline("\n")
+        });
+        blockPort = new Device(outPort);
+    }
 }
 ArduinoSwitchPlatform.prototype.listen = function() {
     var self = this;
+    if(!self.config.serial_port_in) return;
     var serialCallBack = function(data) {
         var content = data.split('/');
         var value = content[0];
@@ -92,6 +97,10 @@ function ArduinoSwitchAccessory(sw, log, config) {
 
     self.service.getCharacteristic(Characteristic.On).on('set', function(state, cb) {
         self.currentState = state;
+        if(!self.config.serial_port_out){
+            cb(null);
+            return;
+        };
         if(self.currentState) {
             if(!removeCode(self.sw.on.code,receivedCodes)){
                 addCode(self.sw.on.code,sentCodes);
