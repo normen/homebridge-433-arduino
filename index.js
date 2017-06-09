@@ -5,7 +5,6 @@ var blockPort;
 var inPort;
 var outPort;
 var sentCodes = [];
-var receivedCodes = [];
 
 function removeCode(value, array){
     value = parseInt(value);
@@ -70,7 +69,6 @@ ArduinoSwitchPlatform.prototype.listen = function() {
             var pulse = content[1].replace('\n','').replace('\r',"");
             self.log('Got a serial message, value=[%s], pulse=[%s]', value, pulse);
             if(!removeCode(value, sentCodes) && self.accessories) {
-                addCode(value, receivedCodes);
                 self.accessories.forEach(function(accessory) {
                     accessory.notify.call(accessory, value);
                 });
@@ -112,17 +110,13 @@ function ArduinoSwitchAccessory(sw, log, config) {
             return;
         };
         if(self.currentState) {
-            if(!removeCode(self.sw.on.code,receivedCodes)){
-                addCode(self.sw.on.code,sentCodes);
-                blockPort.send(self.sw.on.code +"/"+ self.sw.on.pulse +"\n");
-                self.log('Sent on code %s',self.sw.name);
-            }
+            addCode(self.sw.on.code,sentCodes);
+            blockPort.send(self.sw.on.code +"/"+ self.sw.on.pulse +"\n");
+            self.log('Sent on code for %s',self.sw.name);
         } else {
-            if(!removeCode(self.sw.off.code,receivedCodes)){
-                addCode(self.sw.off.code,sentCodes);
-                blockPort.send(self.sw.off.code +"/"+  self.sw.off.pulse +"\n");
-                self.log('Sent off code %s',self.sw.name);
-            }
+            addCode(self.sw.off.code,sentCodes);
+            blockPort.send(self.sw.off.code +"/"+  self.sw.off.pulse +"\n");
+            self.log('Sent off code for %s',self.sw.name);
         }
         cb(null);
     }.bind(self));
@@ -130,11 +124,13 @@ function ArduinoSwitchAccessory(sw, log, config) {
 ArduinoSwitchAccessory.prototype.notify = function(code) {
     var self = this;
     if(this.sw.on.code == code) {
-        self.log("%s is turned on", self.sw.name);
-        self.service.getCharacteristic(Characteristic.On).setValue(true);
+        self.log("Received on code for %s", self.sw.name);
+        self.currentState = true;
+        self.service.getCharacteristic(Characteristic.On).updateValue(self.currentState);
     } else if (this.sw.off.code == code) {
-        self.log("%s is turned off", self.sw.name);
-        self.service.getCharacteristic(Characteristic.On).setValue(false);
+        self.log("Received off code for %s", self.sw.name);
+        self.currentState = false;
+        self.service.getCharacteristic(Characteristic.On).updateValue(self.currentState);
     }
 }
 ArduinoSwitchAccessory.prototype.getServices = function() {
