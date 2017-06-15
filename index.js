@@ -5,42 +5,22 @@ var blockPort;
 var inPort;
 var outPort;
 var sentCodes = [];
-
-function removeCode(value, array){
-    value = parseInt(value);
-    var index = array.indexOf(value);
-    if(index>-1){
-        array.splice(index, 1);
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-function addCode(value, array){
-    value = parseInt(value);
-    array.push(value);
-    setTimeout(removeCode, 3000, value, array);
-}
-
-module.exports = function(homebridge) {
-    Service = homebridge.hap.Service;
-    Characteristic = homebridge.hap.Characteristic;
-    homebridge.registerPlatform("homebridge-433-arduino", "ArduinoRCSwitch", ArduinoSwitchPlatform);
-}
+var lastInputTime = 0;
+var inputOutputTimeout = 500;
 
 function ArduinoSwitchPlatform(log, config) {
     var self = this;
     self.config = config;
     self.log = log;
+    if(config.input_output_timeout) inputOutputTimeout = config.input_output_timeout;
     if(config.serial_port_in == config.serial_port_out){
         inPort = new SerialPort(self.config.serial_port_in, {
             baudRate: 9600,
             parser: SerialPort.parsers.readline("\n")
         });
         outPort = inPort;
-        blockPort = new Device(outPort);
+        blockPort = new Device(inPort);
+        self.log('Enabling one-arduino-mode using ',config.serial_port_in);
     }
     else{
         if(self.config.serial_port_in){
@@ -56,6 +36,7 @@ function ArduinoSwitchPlatform(log, config) {
             });
             blockPort = new Device(outPort);
         }
+        self.log('Enabling two-arduino-mode using ',config.serial_port_in, config.serial_port_out);
     }
 }
 ArduinoSwitchPlatform.prototype.listen = function() {
@@ -64,11 +45,12 @@ ArduinoSwitchPlatform.prototype.listen = function() {
     var serialCallBack = function(data) {
         if(data.startsWith("OK")) return;
         var content = data.split('/');
-        var value = content[0];
         if(content.length == 2){
+            var value = content[0];
             var pulse = content[1].replace('\n','').replace('\r',"");
-            self.log('Got a serial message, value=[%s], pulse=[%s]', value, pulse);
             if(!removeCode(value, sentCodes) && self.accessories) {
+                self.log('Got a serial message, value=[%s], pulse=[%s]', value, pulse);
+                lastInputTime = new Date().getTime();
                 self.accessories.forEach(function(accessory) {
                     accessory.notify.call(accessory, value);
                 });
@@ -138,10 +120,10 @@ ArduinoSwitchAccessory.prototype.getServices = function() {
     var services = [];
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
-    .setCharacteristic(Characteristic.Manufacturer, 'El Cheapo')
-    .setCharacteristic(Characteristic.Model, 'Mains Plug')
-    .setCharacteristic(Characteristic.SerialNumber, '12345')
-    .setCharacteristic(Characteristic.FirmwareRevision, '1.0.0')
+    .setCharacteristic(Characteristic.Manufacturer, '433 MHz RC')
+    .setCharacteristic(Characteristic.Model, 'Pulse-'+self.sw.on.pulse)
+    .setCharacteristic(Characteristic.SerialNumber, self.sw.on.code+'-'+self.sw.off.code)
+    .setCharacteristic(Characteristic.FirmwareRevision, process.env.version)
     .setCharacteristic(Characteristic.HardwareRevision, '1.0.0');
     services.push(service);
     services.push(self.service);
@@ -163,11 +145,41 @@ Device.prototype.send = function (data, callback) {
     this._busy = true;
     this.processQueue();
 };
-Device.prototype.processQueue = function () {
-    var next = this._queue.shift();
+Device.prototype.processQueue = function (inData) {
+    var next = inData == undefined ? this._queue.shift() : inData;
     if (!next) {
         this._busy = false;
         return;
     }
-    this._serial.write(next[0]);
+    var curTime = new Date().getTime();
+    if(curTime - lastInputTime < inputOutputTimeout){
+        setTimeout(this.processQueue.bind(this, next), inputOutputTimeout);
+    }else{
+        this._serial.write(next[0]);
+    }
 };
+
+function removeCode(value, array){
+    value = parseInt(value);
+    var index = array.indexOf(value);
+    if(index>-1){
+        array.splice(index, 1);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+function addCode(value, array){
+    value = parseInt(value);
+    array.push(value);
+    array.push(value); // add code two times as they are repeated on arduino
+    setTimeout(removeCode, 2000, value, array);
+}
+
+module.exports = function(homebridge) {
+    Service = homebridge.hap.Service;
+    Characteristic = homebridge.hap.Characteristic;
+    homebridge.registerPlatform("homebridge-433-arduino", "ArduinoRCSwitch", ArduinoSwitchPlatform);
+}
