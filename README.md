@@ -149,6 +149,12 @@ void loop() {
 
 `switches` is the list of configured switches. When Homebridge is running the console will show the needed code and pulse values for any received 433MHz signals it can decode so you can find them there and enter them in your config.json file.
 
+Switches work bidirectionally, when a switch is changed in homekit a 433 signal is sent, when the 433 signal is received the switch in homekit is changed.
+
+`buttons` is the list of configured buttons. Buttons work differently in that there is no on/off pair, each signal is routed to its own switch. These switches enable for one second and then disable again. This makes it easy to trigger scenes with these buttons regardless of their on/off state.
+
+Buttons only work for receiving signals.
+
  ```javascript
  {
    "bridge": {
@@ -186,6 +192,18 @@ void loop() {
              "code":123459,
              "pulse":188
            }
+         }
+       ],
+       "buttons": [
+         {
+           "name" : "My Button",
+           "code":123450,
+           "pulse":188
+         },
+         {
+           "name" : "My Other Button",
+           "code":1234501,
+           "pulse":188
          }
        ]
      }
