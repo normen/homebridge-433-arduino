@@ -79,6 +79,7 @@ function ArduinoSwitchAccessory(sw, log, config) {
     self.log = log;
     self.config = config;
     self.currentState = false;
+    self.throttle = config.throttle?config.throttle:500;
 
     self.service = new Service.Switch(self.name);
 
@@ -105,17 +106,23 @@ function ArduinoSwitchAccessory(sw, log, config) {
         }
         cb(null);
     }.bind(self));
+    self.notifyOn = helpers.throttle(function(){
+        self.log("Received on code for %s", self.sw.name);
+        self.currentState = true;
+        self.service.getCharacteristic(Characteristic.On).updateValue(self.currentState);
+    },self.throttle,self);
+    self.notifyOff = helpers.throttle(function(){
+        self.log("Received off code for %s", self.sw.name);
+        self.currentState = false;
+        self.service.getCharacteristic(Characteristic.On).updateValue(self.currentState);
+    },self.throttle,self);
 }
 ArduinoSwitchAccessory.prototype.notify = function(code) {
     var self = this;
     if(this.sw.on.code == code) {
-        self.log("Received on code for %s", self.sw.name);
-        self.currentState = true;
-        self.service.getCharacteristic(Characteristic.On).updateValue(self.currentState);
+        self.notifyOn();
     } else if (this.sw.off.code == code) {
-        self.log("Received off code for %s", self.sw.name);
-        self.currentState = false;
-        self.service.getCharacteristic(Characteristic.On).updateValue(self.currentState);
+        self.notifyOff();
     }
 }
 ArduinoSwitchAccessory.prototype.getServices = function() {
@@ -140,6 +147,7 @@ function ArduinoButtonAccessory(sw, log, config) {
     self.log = log;
     self.config = config;
     self.currentState = false;
+    self.throttle = config.throttle?config.throttle:500;
 
     self.service = new Service.Switch(self.name);
 
@@ -156,13 +164,17 @@ function ArduinoButtonAccessory(sw, log, config) {
         }
         cb(null);
     }.bind(self));
-}
-ArduinoButtonAccessory.prototype.notify = function(code) {
-    if(this.sw.code == code) {
+
+    self.notifyOn = helpers.throttle(function(){
         this.log("Received button code for %s", this.sw.name);
         this.currentState = true;
         this.service.getCharacteristic(Characteristic.On).updateValue(this.currentState);
         setTimeout(this.resetButton.bind(this), 1000);
+    },self.throttle,self);
+}
+ArduinoButtonAccessory.prototype.notify = function(code) {
+    if(this.sw.code == code) {
+        this.notifyOn();
     }
 }
 ArduinoButtonAccessory.prototype.resetButton = function() {
@@ -235,4 +247,22 @@ module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     homebridge.registerPlatform("homebridge-433-arduino", "ArduinoRCSwitch", ArduinoSwitchPlatform);
+}
+
+var helpers = {
+  throttle: function(fn, threshold, scope) {
+    threshold || (threshold = 250);
+    var last, deferTimer;
+
+    return function() {
+      var context = scope || this;
+      var now = +new Date, args = arguments;
+
+      if (last && now < last + threshold) {
+      } else {
+        last = now;
+        fn.apply(context, args);
+      }
+    };
+  }
 }

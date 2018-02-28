@@ -29,6 +29,8 @@ Most 433 MHz switches should work, heres a list of ones I or others tried:
 - Intertechno YWT-800 switch
 - Intertechno CMR-1000 actuator
 
+Even unsupported switches can be made to work, see below.
+
 ## Installation
 
 ### On the Arduinos
@@ -218,6 +220,15 @@ Buttons only work for receiving signals.
 You will only need this value if you have 433 switches that control scenes which in turn control 433 plugs. In that case the switch is sending 433 signals and if the plugin would start sending immediately when it decodes the first signal it might start sending while the switch is still sending as well, mixing the signals.
 
 Decrease this value to get quicker response of 433 plugs in the aforementioned scenarios, increase it if 433 plugs don't react at all in such scenarios.
+
+`throttle` is the time in milliseconds that the incoming signal of a single button or switch will be throttled. This is to avoid switches triggering HomeKit multiple times when pressed. The default value is `500`.
+
+## Adding support for unsupported Switches
+If you have a 433 device that doesn't work you can try and download a different version of the rcswitch library and run a "discovery application" that suggests how to extend the rcswitch.cpp file to add support for the unknown signal:
+
+https://github.com/Martin-Laclaustra/rc-switch/
+
+Download the modified rc-switch branch "protocollessreceiver", it includes the discovery code for Arduino. It should run as is on the 433 board for this project.
 
 ## Credits
 
