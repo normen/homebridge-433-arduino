@@ -14,26 +14,20 @@ function ArduinoSwitchPlatform(log, config) {
     self.log = log;
     if(config.input_output_timeout) inputOutputTimeout = config.input_output_timeout;
     if(config.serial_port_in == config.serial_port_out){
-        inPort = new SerialPort(self.config.serial_port_in, {
-            baudRate: 9600,
-            parser: SerialPort.parsers.readline("\n")
-        });
+        port = new SerialPort(self.config.serial_port_in, {baudRate: 9600});
+        inPort = port.pipe(new Readline({ delimiter: '\n' }));
         outPort = inPort;
         blockPort = new Device(inPort);
         self.log('Enabling one-arduino-mode using ',config.serial_port_in);
     }
     else{
         if(self.config.serial_port_in){
-            inPort = new SerialPort(self.config.serial_port_in, {
-                baudRate: 9600,
-                parser: SerialPort.parsers.readline("\n")
-            });
+            port = new SerialPort(self.config.serial_port_in, {baudRate: 9600});
+            inPort = port.pipe(new Readline({ delimiter: '\n' }));
         }
         if(self.config.serial_port_out){
-            outPort = new SerialPort(self.config.serial_port_out, {
-                baudRate: 9600,
-                parser: SerialPort.parsers.readline("\n")
-            });
+            port = new SerialPort(self.config.serial_port_out, {baudRate: 9600});
+            outPort = port.pipe(new Readline({ delimiter: '\n' }))
             blockPort = new Device(outPort);
         }
         self.log('Enabling two-arduino-mode using ',config.serial_port_in, config.serial_port_out);
