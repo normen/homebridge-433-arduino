@@ -84,7 +84,7 @@ String getValue(String data, char separator, int index) {
 void receiveSerialData() {
     static byte ndx = 0;
     char endMarker = '\n';
-    char rc;   
+    char rc;
     if (Serial.available() > 0) {
         rc = Serial.read();
         if (rc != endMarker) {
@@ -122,7 +122,7 @@ void receiveRcData(){
       Serial.println( out );
     }
     mySwitch.resetAvailable();
-  }  
+  }
 }
 
 void loop() {
@@ -153,9 +153,17 @@ void loop() {
 
 Switches work bidirectionally, when a switch is changed in homekit a 433 signal is sent, when the 433 signal is received the switch in homekit is changed.
 
-`buttons` is the list of configured buttons. Buttons work differently in that there is no on/off pair, each signal is routed to its own switch. These switches enable for one second and then disable again. This makes it easy to trigger scenes with these buttons regardless of their on/off state.
+`buttons` is a list of configured buttons. Buttons work differently in that there is no on/off pair, each signal is routed to its own switch. These switches enable for one second and then disable again. This makes it easy to trigger scenes with these buttons regardless of their on/off state.
 
 Buttons only work for receiving signals.
+
+`detectors` is a list of configured smoke detectors.
+
+Smoke detectors will only report their current state (smoke detected or not).
+
+`sensors` is a list of configured leak sensors.
+
+Leak sensors will only report their current state (leak detected or not).
 
  ```javascript
  {
@@ -206,6 +214,20 @@ Buttons only work for receiving signals.
            "name" : "My Other Button",
            "code":1234501,
            "pulse":188
+         }
+       ],
+       "detectors": [
+         {
+           "name" : "My Smoke Detector",
+           "code":1234502,
+           "pulse":366
+         }
+       ],
+       "sensors": [
+         {
+           "name" : "My Leak Sensor",
+           "code":1234503,
+           "pulse":366
          }
        ]
      }

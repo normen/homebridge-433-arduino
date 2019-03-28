@@ -62,11 +62,17 @@ ArduinoSwitchPlatform.prototype.listen = function() {
 ArduinoSwitchPlatform.prototype.accessories = function(callback) {
     var self = this;
     self.accessories = [];
-    self.config.switches.forEach(function(sw) {
+    if(self.config.switches) self.config.switches.forEach(function(sw) {
         self.accessories.push(new ArduinoSwitchAccessory(sw, self.log, self.config));
     });
-    self.config.buttons.forEach(function(sw) {
+    if(self.config.buttons) self.config.buttons.forEach(function(sw) {
         self.accessories.push(new ArduinoButtonAccessory(sw, self.log, self.config));
+    });
+    if(self.config.detectors) self.config.detectors.forEach(function(sw) {
+        self.accessories.push(new ArduinoSmokeAccessory(sw, self.log, self.config));
+    });
+    if(self.config.sensors) self.config.sensors.forEach(function(sw) {
+        self.accessories.push(new ArduinoWaterAccessory(sw, self.log, self.config));
     });
     setTimeout(self.listen.bind(self),10);
     callback(self.accessories);
@@ -182,6 +188,94 @@ ArduinoButtonAccessory.prototype.resetButton = function() {
     this.service.getCharacteristic(Characteristic.On).updateValue(this.currentState);
 }
 ArduinoButtonAccessory.prototype.getServices = function() {
+    var self = this;
+    var services = [];
+    var service = new Service.AccessoryInformation();
+    service.setCharacteristic(Characteristic.Name, self.name)
+    .setCharacteristic(Characteristic.Manufacturer, '433 MHz RC')
+    .setCharacteristic(Characteristic.Model, 'Pulse-'+self.sw.pulse)
+    .setCharacteristic(Characteristic.SerialNumber, self.sw.code)
+    .setCharacteristic(Characteristic.FirmwareRevision, process.env.version)
+    .setCharacteristic(Characteristic.HardwareRevision, '1.0.0');
+    services.push(service);
+    services.push(self.service);
+    return services;
+}
+
+function ArduinoSmokeAccessory(sw, log, config) {
+    var self = this;
+    self.name = sw.name;
+    self.sw = sw;
+    self.log = log;
+    self.config = config;
+    self.currentState = false;
+    self.throttle = config.throttle?config.throttle:10000;
+    self.service = new Service.SmokeSensor(self.name);
+    self.service.getCharacteristic(Characteristic.SmokeDetected).value = self.currentState;
+    self.service.getCharacteristic(Characteristic.SmokeDetected).on('get', function(cb) {
+        cb(null, self.currentState);
+    }.bind(self));
+    self.notifyOn = helpers.throttle(function(){
+        this.log("Received smoke detector code for %s", this.sw.name);
+        this.currentState = true;
+        this.service.getCharacteristic(Characteristic.SmokeDetected).updateValue(this.currentState);
+        setTimeout(this.resetButton.bind(this), 60000);
+    },self.throttle,self);
+}
+ArduinoSmokeAccessory.prototype.notify = function(code) {
+    if(this.sw.code == code) {
+        this.notifyOn();
+    }
+}
+ArduinoSmokeAccessory.prototype.resetButton = function() {
+    this.currentState = false;
+    this.service.getCharacteristic(Characteristic.SmokeDetected).updateValue(this.currentState);
+}
+ArduinoSmokeAccessory.prototype.getServices = function() {
+    var self = this;
+    var services = [];
+    var service = new Service.AccessoryInformation();
+    service.setCharacteristic(Characteristic.Name, self.name)
+    .setCharacteristic(Characteristic.Manufacturer, '433 MHz RC')
+    .setCharacteristic(Characteristic.Model, 'Pulse-'+self.sw.pulse)
+    .setCharacteristic(Characteristic.SerialNumber, self.sw.code)
+    .setCharacteristic(Characteristic.FirmwareRevision, process.env.version)
+    .setCharacteristic(Characteristic.HardwareRevision, '1.0.0');
+    services.push(service);
+    services.push(self.service);
+    return services;
+}
+
+function ArduinoWaterAccessory(sw, log, config) {
+    var self = this;
+    self.name = sw.name;
+    self.sw = sw;
+    self.log = log;
+    self.config = config;
+    self.currentState = false;
+    self.throttle = config.throttle?config.throttle:10000;
+    self.service = new Service.LeakSensor(self.name);
+    self.service.getCharacteristic(Characteristic.LeakDetected).value = self.currentState;
+    self.service.getCharacteristic(Characteristic.LeakDetected).on('get', function(cb) {
+        cb(null, self.currentState);
+    }.bind(self));
+    self.notifyOn = helpers.throttle(function(){
+        this.log("Received leak detector code for %s", this.sw.name);
+        this.currentState = true;
+        this.service.getCharacteristic(Characteristic.LeakDetected).updateValue(this.currentState);
+        setTimeout(this.resetButton.bind(this), 60000);
+    },self.throttle,self);
+}
+ArduinoWaterAccessory.prototype.notify = function(code) {
+    if(this.sw.code == code) {
+        this.notifyOn();
+    }
+}
+ArduinoWaterAccessory.prototype.resetButton = function() {
+    this.currentState = false;
+    this.service.getCharacteristic(Characteristic.LeakDetected).updateValue(this.currentState);
+}
+ArduinoWaterAccessory.prototype.getServices = function() {
     var self = this;
     var services = [];
     var service = new Service.AccessoryInformation();
