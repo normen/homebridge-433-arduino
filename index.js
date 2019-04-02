@@ -1,6 +1,7 @@
 var Service, Characteristic, LastUpdate;
 
 var SerialPort = require('serialport');
+var Readline = SerialPort.parsers.Readline;
 var blockPort;
 var inPort;
 var outPort;
@@ -14,27 +15,20 @@ function ArduinoSwitchPlatform(log, config) {
     self.log = log;
     if(config.input_output_timeout) inputOutputTimeout = config.input_output_timeout;
     if(config.serial_port_in == config.serial_port_out){
-        inPort = new SerialPort(self.config.serial_port_in, {
-            baudRate: 9600,
-            parser: SerialPort.parsers.readline("\n")
-        });
+        port = new SerialPort(self.config.serial_port_in, {baudRate: 9600});
+        inPort = port.pipe(new Readline({ delimiter: '\n' }));
         outPort = inPort;
-        blockPort = new Device(inPort);
+        blockPort = new Device(port);
         self.log('Enabling one-arduino-mode using ',config.serial_port_in);
     }
     else{
         if(self.config.serial_port_in){
-            inPort = new SerialPort(self.config.serial_port_in, {
-                baudRate: 9600,
-                parser: SerialPort.parsers.readline("\n")
-            });
+            port = new SerialPort(self.config.serial_port_in, {baudRate: 9600});
+            inPort = port.pipe(new Readline({ delimiter: '\n' }));
         }
         if(self.config.serial_port_out){
-            outPort = new SerialPort(self.config.serial_port_out, {
-                baudRate: 9600,
-                parser: SerialPort.parsers.readline("\n")
-            });
-            blockPort = new Device(outPort);
+            port = new SerialPort(self.config.serial_port_out, {baudRate: 9600});
+            blockPort = new Device(port);
         }
         self.log('Enabling two-arduino-mode using ',config.serial_port_in, config.serial_port_out);
     }
@@ -295,8 +289,11 @@ function Device (serial) {
     this._queue = [];
     this._busy = false;
     var device = this;
-    serial.on('data', function (data) {
-        if(data.startsWith("OK")) device.processQueue();
+    var pipedSerial = serial.pipe(new Readline({ delimiter: '\n' }));
+    pipedSerial.on('data', function (data) {
+        if(data.startsWith("OK")){
+          device.processQueue();
+        }
     });
 }
 Device.prototype.send = function (data, callback) {

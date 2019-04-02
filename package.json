@@ -1,6 +1,6 @@
 {
   "name": "homebridge-433-arduino",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "Add bidirectional support for 433MHz switches to Homebridge using Arduino receivers/senders.",
   "main": "index.js",
   "scripts": {
@@ -26,6 +26,6 @@
     "node": ">=0.12.0"
   },
   "dependencies": {
-    "serialport": "^4.0.0"
+    "serialport": "^7.1.4"
   }
 }
