@@ -1,7 +1,7 @@
 # homebridge-433-arduino
 [![NPM Version](https://img.shields.io/npm/v/homebridge-433-arduino.svg)](https://www.npmjs.com/package/homebridge-433-arduino)
 
-A homebridge plugin to control 433MHz switches and receive 433MHz switch signals using an Arduino Micro connected via USB to send and receive data.
+A homebridge plugin to control 433MHz switches and receive 433MHz switch signals using an Arduino Micro connected via USB or an ESP8266 / ESP32 via WiFi to send and receive data.
 
 ## Introduction
 This plugin allows you to use cheap 433MHz wireless switches as lamps, fans or generic switches in HomeKit and control them using Siri. You can also use your 433Mhz remote to control things in HomeKit, like for example start scenes.
@@ -19,9 +19,6 @@ There is plugins out there that use the Raspberry Pi GPIO functions to send and 
 Additionally, the RasPi works on 3.3V and most 433MHz receivers/transmitters work best at 5V. The Arduino micro runs on 5V and allows a much more stable connection to the receivers and transmitters.
 
 All of this prompted me to create a plugin that doesn't have these issues. The Arduino Micro is a cheap piece of hardware and believe me if you played around with 433MHz switches and HomeKit, you will definitely appreciate the rock-solid performance of the external receiver and sender.
-
-### Why use TWO Arduinos?
-Depending on your setup you can use only a receiver or sender and you can also use one Arduino to do both sending and receiving. Using two Arduinos ensures that all switches being pressed are properly received and all switch signals are properly broadcast, even when many devices are controlled and is the best solution for large setups.
 
 ### Supported switches
 Most 433 MHz switches should work, heres a list of ones I or others tried:
@@ -46,7 +43,7 @@ You will also need a 433MHz sender/receiver pair. For the sender you can use bas
 5. Install the code below on the Arduino Micro and connect it to the homebridge server via USB
 ```
 /*
-  Arduino code for homebridge-433-arduino
+  Arduino code for homebridge-433-arduino v0.9
   (c) by Normen Hansen, released under MIT license
   uses code from  http://forum.arduino.cc/index.php?topic=396450.0
 */
@@ -106,6 +103,9 @@ void sendRcData() {
     if (newData == true) {
         long value = getValue(receivedChars, '/', 0).toInt();
         long pulse = getValue(receivedChars, '/', 1).toInt();
+        long protocol = getValue(receivedChars, '/', 2).toInt();
+        if(protocol==0) protocol = 1;
+        mySwitch.setProtocol(protocol);
         mySwitch.setPulseLength(pulse);
         mySwitch.send(value, 24);
         Serial.println("OK");
@@ -117,8 +117,9 @@ void receiveRcData(){
   if (mySwitch.available()) {
     long value = mySwitch.getReceivedValue();
     long pulse = mySwitch.getReceivedDelay();
+    long protocol = mySwitch.getReceivedProtocol();
     if (value != 0) {
-      String out = value + dash + pulse;
+      String out = value + dash + pulse + dash + protocol;
       Serial.println( out );
     }
     mySwitch.resetAvailable();
@@ -131,13 +132,6 @@ void loop() {
   receiveRcData();
 }
 ```
-#### Optional installation steps for using two Arduinos
-1. Install the Arduino IDE in your computer (http://arduino.cc)
-2. Install the "rc-switch" library in the Arduino IDE (https://github.com/sui77/rc-switch)
-3. Connect a 433 MHz receiver to pin 3 and power on one Arduino Micro, this will be your receiver (serial_port_in)
-4. Connect a 433 MHz sender to pin 4 and power on the other Arduino Micro, this will be your sender (serial_port_out)
-5. Tie pin 3 to ground on the sender Arduino so it doesn't accidentally receive data from the floating pin.
-6. Install the code above on both Arduino Micro devices and connect them to the homebridge server via USB
 
 ### On the homebridge server
 #### Install software
@@ -147,7 +141,7 @@ void loop() {
 
 #### Configure config.json
 
-`serial_port_in`, `serial_port_out` is the USB ports you have your Arduinos connected to, normally /dev/ttyACM0 and /dev/ttyACM1 on Raspberry Pi. If you leave any one of these out of your configuration the plugin will simply not receive or send data so you can use it to only send or only receive data. If you set both to the same name one Arduino will be used both for sending and receiving data.
+`serial_port` is the USB port you have your Arduino connected to, normally /dev/ttyACM0 on Raspberry Pi.
 
 `switches` is the list of configured switches. When Homebridge is running the console will show the needed code and pulse values for any received 433MHz signals it can decode so you can find them there and enter them in your config.json file.
 
@@ -178,8 +172,7 @@ Leak sensors will only report their current state (leak detected or not).
      {
        "platform": "ArduinoRCSwitch",
        "name": "Arduino RC Switch Platform",
-       "serial_port_in": "/dev/ttyACM0",
-       "serial_port_out": "/dev/ttyACM1",
+       "serial_port": "/dev/ttyACM0",
        "switches": [
          {
            "name" : "My Device",
@@ -196,11 +189,13 @@ Leak sensors will only report their current state (leak detected or not).
            "name" : "My Other Device",
            "on": {
              "code":123458,
-             "pulse":188
+             "pulse":188,
+             "protocol":2
            },
            "off": {
              "code":123459,
-             "pulse":188
+             "pulse":188,
+             "protocol":2
            }
          }
        ],
@@ -237,6 +232,10 @@ Leak sensors will only report their current state (leak detected or not).
 ```
 
 ##### Optional settings
+`host` is the hostname of the ESP based transceiver, not used when serial_port is given
+
+`port` is the port of the ESP based transceiver, not used when serial_port is given
+
 `input_output_timeout` is the time in milliseconds that the plugin waits after it has received a signal before sending any signals itself. This is to avoid interfering with switches that send signals. If both the Arduino and the switch are sending at the same time none of the signals will be decoded by the receivers. The default value is `500`.
 
 You will only need this value if you have 433 switches that control scenes which in turn control 433 plugs. In that case the switch is sending 433 signals and if the plugin would start sending immediately when it decodes the first signal it might start sending while the switch is still sending as well, mixing the signals.

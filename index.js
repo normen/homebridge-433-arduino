@@ -1,63 +1,38 @@
 var Service, Characteristic, LastUpdate;
-
-var SerialPort = require('serialport');
-var Readline = SerialPort.parsers.Readline;
-var blockPort;
-var inPort;
-var outPort;
+const SerialTransceiver = require("./tc-serial");
+const WebsocketTransceiver = require("./tc-websocket");
 var sentCodes = [];
-var lastInputTime = 0;
-var inputOutputTimeout = 500;
 
 function ArduinoSwitchPlatform(log, config) {
-    var self = this;
+    let self = this;
     self.config = config;
     self.log = log;
-    if(config.input_output_timeout) inputOutputTimeout = config.input_output_timeout;
-    if(config.serial_port_in == config.serial_port_out){
-        port = new SerialPort(self.config.serial_port_in, {baudRate: 9600});
-        inPort = port.pipe(new Readline({ delimiter: '\n' }));
-        outPort = inPort;
-        blockPort = new Device(port);
-        self.log('Enabling one-arduino-mode using ',config.serial_port_in);
+    var ioTimeout = 500;
+    if(config.input_output_timeout) ioTimeout = config.input_output_timeout;
+    if(config.serial_port || config.serial_port_out){
+        let myport = config.serial_port ? config.serial_port : config.serial_port_out;
+        self.log('Enabling USB mode using ',myport);
+        self.transceiver = new SerialTransceiver(self.log, myport, ioTimeout);
+    }
+    else if(config.host){
+        let host = config.host;
+        let port = config.port?config.port:80;
+        self.log('Enabling WebSocket mode using ',host+":"+port);
+        self.transceiver = new WebsocketTransceiver(self.log, port, host, ioTimeout);
     }
     else{
-        if(self.config.serial_port_in){
-            port = new SerialPort(self.config.serial_port_in, {baudRate: 9600});
-            inPort = port.pipe(new Readline({ delimiter: '\n' }));
-        }
-        if(self.config.serial_port_out){
-            port = new SerialPort(self.config.serial_port_out, {baudRate: 9600});
-            blockPort = new Device(port);
-        }
-        self.log('Enabling two-arduino-mode using ',config.serial_port_in, config.serial_port_out);
+        self.log('Two arduino Mode not available anymore!');
     }
 }
 ArduinoSwitchPlatform.prototype.listen = function() {
-    var self = this;
-    if(!self.config.serial_port_in) return;
-    var serialCallBack = function(data) {
-        if(data.startsWith("OK")) return;
-        var content = data.split('/');
-        if(content.length == 2){
-            var value = content[0];
-            var pulse = content[1].replace('\n','').replace('\r',"");
-            if(!checkCode(value, sentCodes, false) && self.accessories) {
-                self.log('Got a serial message, value=[%s], pulse=[%s]', value, pulse);
-                lastInputTime = new Date().getTime();
-                self.accessories.forEach(function(accessory) {
-                    accessory.notify.call(accessory, value);
-                });
-            }
-        }
-    };
-    inPort.on('data', serialCallBack);
+  this.transceiver.setCallback(this.receiveMessage.bind(this));
+  this.transceiver.init();
 }
 ArduinoSwitchPlatform.prototype.accessories = function(callback) {
-    var self = this;
+    let self = this;
     self.accessories = [];
     if(self.config.switches) self.config.switches.forEach(function(sw) {
-        self.accessories.push(new ArduinoSwitchAccessory(sw, self.log, self.config));
+        self.accessories.push(new ArduinoSwitchAccessory(sw, self.log, self.config, self.transceiver));
     });
     if(self.config.buttons) self.config.buttons.forEach(function(sw) {
         self.accessories.push(new ArduinoButtonAccessory(sw, self.log, self.config));
@@ -71,13 +46,23 @@ ArduinoSwitchPlatform.prototype.accessories = function(callback) {
     setTimeout(self.listen.bind(self),10);
     callback(self.accessories);
 }
+ArduinoSwitchPlatform.prototype.receiveMessage = function(value,pulse,protocol=1) {
+  let self = this;
+  if(!checkCode(value, sentCodes, false) && self.accessories) {
+    self.log('Got a serial message, value=[%s], pulse=[%s]', value, pulse);
+    self.accessories.forEach(function(accessory) {
+      accessory.notify.call(accessory, value);
+    });
+  }
+}
 
-function ArduinoSwitchAccessory(sw, log, config) {
-    var self = this;
+function ArduinoSwitchAccessory(sw, log, config, transceiver) {
+    let self = this;
     self.name = sw.name;
     self.sw = sw;
     self.log = log;
     self.config = config;
+    self.transceiver = transceiver;
     self.currentState = false;
     self.throttle = config.throttle?config.throttle:500;
 
@@ -97,11 +82,13 @@ function ArduinoSwitchAccessory(sw, log, config) {
         };
         if(self.currentState) {
             addCode(self.sw.on.code,sentCodes);
-            blockPort.send(self.sw.on.code +"/"+ self.sw.on.pulse +"\n");
+            let protocol = self.sw.on.protocol?self.sw.on.protocol:1;
+            self.transceiver.send(self.sw.on.code, self.sw.on.pulse, protocol);
             self.log('Sent on code for %s',self.sw.name);
         } else {
             addCode(self.sw.off.code,sentCodes);
-            blockPort.send(self.sw.off.code +"/"+  self.sw.off.pulse +"\n");
+            let protocol = self.sw.off.protocol?self.sw.off.protocol:1;
+            self.transceiver.send(self.sw.off.code, self.sw.off.pulse, protocol);
             self.log('Sent off code for %s',self.sw.name);
         }
         cb(null);
@@ -118,7 +105,7 @@ function ArduinoSwitchAccessory(sw, log, config) {
     },self.throttle,self);
 }
 ArduinoSwitchAccessory.prototype.notify = function(code) {
-    var self = this;
+    let self = this;
     if(this.sw.on.code == code) {
         self.notifyOn();
     } else if (this.sw.off.code == code) {
@@ -126,7 +113,7 @@ ArduinoSwitchAccessory.prototype.notify = function(code) {
     }
 }
 ArduinoSwitchAccessory.prototype.getServices = function() {
-    var self = this;
+    let self = this;
     var services = [];
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
@@ -141,7 +128,7 @@ ArduinoSwitchAccessory.prototype.getServices = function() {
 }
 
 function ArduinoButtonAccessory(sw, log, config) {
-    var self = this;
+    let self = this;
     self.name = sw.name;
     self.sw = sw;
     self.log = log;
@@ -182,7 +169,7 @@ ArduinoButtonAccessory.prototype.resetButton = function() {
     this.service.getCharacteristic(Characteristic.On).updateValue(this.currentState);
 }
 ArduinoButtonAccessory.prototype.getServices = function() {
-    var self = this;
+    let self = this;
     var services = [];
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
@@ -197,7 +184,7 @@ ArduinoButtonAccessory.prototype.getServices = function() {
 }
 
 function ArduinoSmokeAccessory(sw, log, config) {
-    var self = this;
+    let self = this;
     self.name = sw.name;
     self.sw = sw;
     self.log = log;
@@ -226,7 +213,7 @@ ArduinoSmokeAccessory.prototype.resetButton = function() {
     this.service.getCharacteristic(Characteristic.SmokeDetected).updateValue(this.currentState);
 }
 ArduinoSmokeAccessory.prototype.getServices = function() {
-    var self = this;
+    let self = this;
     var services = [];
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
@@ -241,7 +228,7 @@ ArduinoSmokeAccessory.prototype.getServices = function() {
 }
 
 function ArduinoWaterAccessory(sw, log, config) {
-    var self = this;
+    let self = this;
     self.name = sw.name;
     self.sw = sw;
     self.log = log;
@@ -270,7 +257,7 @@ ArduinoWaterAccessory.prototype.resetButton = function() {
     this.service.getCharacteristic(Characteristic.LeakDetected).updateValue(this.currentState);
 }
 ArduinoWaterAccessory.prototype.getServices = function() {
-    var self = this;
+    let self = this;
     var services = [];
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
@@ -284,37 +271,6 @@ ArduinoWaterAccessory.prototype.getServices = function() {
     return services;
 }
 
-function Device (serial) {
-    this._serial = serial;
-    this._queue = [];
-    this._busy = false;
-    var device = this;
-    var pipedSerial = serial.pipe(new Readline({ delimiter: '\n' }));
-    pipedSerial.on('data', function (data) {
-        if(data.startsWith("OK")){
-          device.processQueue();
-        }
-    });
-}
-Device.prototype.send = function (data, callback) {
-    this._queue.push([data, callback]);
-    if (this._busy) return;
-    this._busy = true;
-    this.processQueue();
-};
-Device.prototype.processQueue = function (inData) {
-    var next = inData == undefined ? this._queue.shift() : inData;
-    if (!next) {
-        this._busy = false;
-        return;
-    }
-    var curTime = new Date().getTime();
-    if(curTime - lastInputTime < inputOutputTimeout){
-        setTimeout(this.processQueue.bind(this, next), inputOutputTimeout);
-    }else{
-        this._serial.write(next[0]);
-    }
-};
 
 function checkCode(value, array, remove){
     value = parseInt(value);
