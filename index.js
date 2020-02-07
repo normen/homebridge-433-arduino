@@ -76,10 +76,10 @@ function ArduinoSwitchAccessory(sw, log, config, transceiver) {
 
     self.service.getCharacteristic(Characteristic.On).on('set', function(state, cb) {
         self.currentState = state;
-        if(!self.config.serial_port_out){
+        /*if(!self.config.serial_port_out){
             cb(null);
             return;
-        };
+        };*/
         if(self.currentState) {
             addCode(self.sw.on.code,sentCodes);
             let protocol = self.sw.on.protocol?self.sw.on.protocol:1;
