@@ -21,12 +21,6 @@ WebsocketTransceiver.prototype.setCallback = function(callback){
 WebsocketTransceiver.prototype.init = function(){
     let self = this;
     this.ws.open('ws://'+this.host+':'+this.port);
-    this.ws.onopen = function open() {
-      self.log("Connected to "+self.host+":"+self.port);
-    }
-    this.ws.onerror = function open() {
-      self.log("Error with "+self.host+":"+self.port);
-    }
     this.ws.onmessage = this.wsCallback.bind(this);
 }
 

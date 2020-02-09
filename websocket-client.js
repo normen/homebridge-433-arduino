@@ -3,7 +3,7 @@ const WebSocket = require('ws');
 function WebSocketClient(log){
 	this.log = log;
 	this.number = 0;	// Message number
-	this.autoReconnectInterval = 5*1000;	// ms
+	this.autoReconnectInterval = 10*1000;	// ms
 }
 WebSocketClient.prototype.open = function(url){
 	let self = this;
@@ -19,7 +19,7 @@ WebSocketClient.prototype.open = function(url){
 	this.instance.on('close',(e)=>{
 		switch (e.code){
 		case 1000:	// CLOSE_NORMAL
-			self.log("WebSocket: closed");
+			this.reconnect(e);
 			break;
 		default:	// Abnormal closure
 			this.reconnect(e);
@@ -33,9 +33,10 @@ WebSocketClient.prototype.open = function(url){
 			this.reconnect(e);
 			break;
 		default:
-			this.onerror(e);
+			this.reconnect(e);
 			break;
 		}
+		this.onerror(e);
 	});
 }
 WebSocketClient.prototype.send = function(data,option){
@@ -47,8 +48,7 @@ WebSocketClient.prototype.send = function(data,option){
 }
 WebSocketClient.prototype.reconnect = function(e){
 	let self = this;
-	this.log(`WebSocketClient: retry in ${this.autoReconnectInterval}ms`,e);
-        this.instance.removeAllListeners();
+    this.instance.removeAllListeners();
 	var that = this;
 	setTimeout(function(){
 		self.log("WebSocketClient: reconnecting...");

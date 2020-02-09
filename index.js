@@ -19,7 +19,7 @@ function ArduinoSwitchPlatform(log, config) {
         let host = config.host;
         let port = config.port?config.port:80;
         self.log('Enabling WebSocket mode using ',host+":"+port);
-        self.transceiver = new WebsocketTransceiver(self.log, port, host, ioTimeout);
+        self.transceiver = new WebsocketTransceiver(self.log, host, port, ioTimeout);
     }
     else{
         self.log('Two arduino Mode not available anymore!');
