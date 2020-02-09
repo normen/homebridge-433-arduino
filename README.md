@@ -272,7 +272,7 @@ Note that for some switches not all of the received info that is given in the ho
 The extended library also allows using a CC1101 based transceiver with either Arduino or ESP hardware. Note that this transceiver is usually 3.3V only and should not be used with Arduino Micro (5V), Arduino Nano or ESP8266 will work (3.3V).
 
 ### Example config.json with Websockets & ESPPiLight
-Note that for switches you can specify "state":"on" or "state":"off", they will still switch on and off as intended. For buttons you have to specify which of the two states you want to use as a button.
+Note that for switches that report "up" and "down" for the state instead of "on" and "off" you can specify "state":"up" in the configuration to account for that. For buttons you have to specify which state you want to use as a button.
 
 ```javascript
 "platforms": [
@@ -284,21 +284,19 @@ Note that for switches you can specify "state":"on" or "state":"off", they will 
       "switches": [
         {
           "name" : "My Device",
-          "type": "my_type",
+          "type": "clarus_switch",
           "message":{
             "id": "A3",
-            "unit": "60",
-            "state": "on"
+            "unit": 60
           }
-        }
-      ],
+      },
       "buttons": [
         {
           "name" : "My Button",
-          "type": "my_type",
+          "type": "clarus_switch",
           "message":{
             "id": "B4",
-            "unit": "20",
+            "unit": 20,
             "state": "off"
           }
         }

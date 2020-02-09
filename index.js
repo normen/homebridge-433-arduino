@@ -440,7 +440,19 @@ function makeTransmitMessage(message, on = undefined){
                 clonedMessage.down = 1;
             }
         }
+        else if(on){
+            clonedMessage.on = 1;
+        }
+        else if(on !== undefined){
+            clonedMessage.off = 1;
+        }
         delete clonedMessage.state;
+    }
+    else if(on){
+        clonedMessage.on = 1;
+    }
+    else if(on !== undefined){
+        clonedMessage.off = 1;
     }
     return clonedMessage;
 }
