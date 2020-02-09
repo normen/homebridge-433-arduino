@@ -35,7 +35,9 @@ WebsocketTransceiver.prototype.send = function(message){
     if(message.code){
         msg = message.code +"/"+ message.pulse +"/"+ message.protocol;
     }else if(message.type && message.message){
-        msg = JSON.stringify(message);
+        try{
+            msg = JSON.stringify(message);
+        }catch (e){this.log(e)}
     }
     if(msg == null) return;
     this._queue.push(msg);
@@ -65,8 +67,10 @@ WebsocketTransceiver.prototype.wsCallback = function(data) {
     }
     this.lastInputTime = new Date().getTime();
     if(data.startsWith("{")){
-        let message = JSON.parse(data);
-        this.callback(message);
+        try{
+            let message = JSON.parse(data);
+            this.callback(message);
+        }catch (e){this.log(e)}
         return;
     }
     if(data.startsWith("pilight")){
@@ -84,7 +88,7 @@ WebsocketTransceiver.prototype.wsCallback = function(data) {
         else{
           protocol = 1;
         }
-        this.callback({"code":value,"pulse":pulse,"protocol":protocol});
+        this.callback({"code":Number(value),"pulse":Number(pulse),"protocol":Number(protocol)});
     }
 }
 

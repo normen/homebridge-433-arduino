@@ -50,7 +50,9 @@ ArduinoSwitchPlatform.prototype.accessories = function(callback) {
 ArduinoSwitchPlatform.prototype.receiveMessage = function(value) {
     let self = this;
     if(!checkCode(value, sentCodes, false) && self.accessories) {
-        self.log(JSON.stringify(value));
+        try{
+            self.log(JSON.stringify(value));
+        }catch (e){this.log(e)}
         self.accessories.forEach(function(accessory) {
             accessory.notify.call(accessory, value);
         });
@@ -396,7 +398,10 @@ function getSendObject(sw, on = undefined){
 //if on is undefined use state, else change to value of on
 function makeTransmitMessage(message, on = undefined){
     if(!message) return message;
-    var clonedMessage = JSON.parse(JSON.stringify(message));
+    try{
+        var clonedMessage = JSON.parse(JSON.stringify(message));
+    }catch (e){this.log(e)}
+    if(!clonedMessage) return {};
     if(clonedMessage.state){
         let state = clonedMessage.state;
         if(state == "on"){
