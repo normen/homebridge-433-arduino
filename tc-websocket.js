@@ -30,12 +30,19 @@ WebsocketTransceiver.prototype.init = function(){
     this.ws.onmessage = this.wsCallback.bind(this);
 }
 
-WebsocketTransceiver.prototype.send = function(code, pulse, protocol = 1){
-    this._queue.push(code+"/"+pulse+"/"+protocol);
+WebsocketTransceiver.prototype.send = function(message){
+    var msg = null;
+    if(message.code){
+        msg = message.code +"/"+ message.pulse +"/"+ message.protocol;
+    }else if(message.type && message.message){
+        msg = JSON.stringify(message);
+    }
+    if(msg == null) return;
+    this._queue.push(msg);
     if (this._busy) return;
     this._busy = true;
     this.processQueue();
-};
+}
 
 WebsocketTransceiver.prototype.processQueue = function(inData) {
     var next = inData == undefined ? this._queue.shift() : inData;
@@ -57,6 +64,15 @@ WebsocketTransceiver.prototype.wsCallback = function(data) {
       return;
     }
     this.lastInputTime = new Date().getTime();
+    if(data.startsWith("{")){
+        let message = JSON.parse(data);
+        this.callback(message);
+        return;
+    }
+    if(data.startsWith("pilight")){
+        this.log(data);
+        return;
+    }
     var content = data.split('/');
     if(content.length >= 2){
         var value = content[0];
@@ -68,7 +84,7 @@ WebsocketTransceiver.prototype.wsCallback = function(data) {
         else{
           protocol = 1;
         }
-        this.callback(value,pulse,protocol);
+        this.callback({"code":value,"pulse":pulse,"protocol":protocol});
     }
 }
 

@@ -20,13 +20,26 @@ SerialTransceiver.prototype.init = function(){
     this.inPort.on('data', this.serialCallback.bind(this));
 }
 
-SerialTransceiver.prototype.send = function(code, pulse, protocol = 1){
-    this.blockPort.send(code +"/"+ pulse +"/"+ protocol + "\n");
+SerialTransceiver.prototype.send = function(message){
+    if(message.code){
+        this.blockPort.send(message.code +"/"+ message.pulse +"/"+ message.protocol + "\n");
+    }else if(message.type && message.message){
+        this.blockPort.send(JSON.stringify(message) + "\n");
+    }
 }
 
 SerialTransceiver.prototype.serialCallback = function(data) {
     if(data.startsWith("OK")) return;
     this.blockPort.lastInputTime = new Date().getTime();
+    if(data.startsWith("{")){
+        let message = JSON.parse(data);
+        this.callback(message);
+        return;
+    }
+    if(data.startsWith("pilight")){
+        this.log(data);
+        return;
+    }
     var content = data.split('/');
     if(content.length >= 2){
         var value = content[0];
@@ -38,7 +51,7 @@ SerialTransceiver.prototype.serialCallback = function(data) {
         else{
           protocol = 1;
         }
-        this.callback(value,pulse,protocol);
+        this.callback({"code":value,"pulse":pulse,"protocol":protocol});
     }
 }
 

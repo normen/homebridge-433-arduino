@@ -3,11 +3,12 @@ const SerialTransceiver = require("./tc-serial");
 const WebsocketTransceiver = require("./tc-websocket");
 var sentCodes = [];
 
+/** PLATFORM CLASS **/
 function ArduinoSwitchPlatform(log, config) {
     let self = this;
     self.config = config;
     self.log = log;
-    var ioTimeout = 500;
+    var ioTimeout = 100;
     if(config.input_output_timeout) ioTimeout = config.input_output_timeout;
     if(config.serial_port || config.serial_port_out){
         let myport = config.serial_port ? config.serial_port : config.serial_port_out;
@@ -46,16 +47,23 @@ ArduinoSwitchPlatform.prototype.accessories = function(callback) {
     setTimeout(self.listen.bind(self),10);
     callback(self.accessories);
 }
-ArduinoSwitchPlatform.prototype.receiveMessage = function(value,pulse,protocol=1) {
-  let self = this;
-  if(!checkCode(value, sentCodes, false) && self.accessories) {
-    self.log('Got a serial message, value=[%s], pulse=[%s]', value, pulse);
-    self.accessories.forEach(function(accessory) {
-      accessory.notify.call(accessory, value);
-    });
-  }
+ArduinoSwitchPlatform.prototype.receiveMessage = function(value) {
+    let self = this;
+    if(!checkCode(value, sentCodes, false) && self.accessories) {
+        self.log(JSON.stringify(value));
+        self.accessories.forEach(function(accessory) {
+            accessory.notify.call(accessory, value);
+        });
+    }
 }
 
+module.exports = function(homebridge) {
+    Service = homebridge.hap.Service;
+    Characteristic = homebridge.hap.Characteristic;
+    homebridge.registerPlatform("homebridge-433-arduino", "ArduinoRCSwitch", ArduinoSwitchPlatform);
+}
+
+/** SWITCH ACCESSORY CLASS **/
 function ArduinoSwitchAccessory(sw, log, config, transceiver) {
     let self = this;
     self.name = sw.name;
@@ -76,19 +84,15 @@ function ArduinoSwitchAccessory(sw, log, config, transceiver) {
 
     self.service.getCharacteristic(Characteristic.On).on('set', function(state, cb) {
         self.currentState = state;
-        /*if(!self.config.serial_port_out){
-            cb(null);
-            return;
-        };*/
         if(self.currentState) {
-            addCode(self.sw.on.code,sentCodes);
-            let protocol = self.sw.on.protocol?self.sw.on.protocol:1;
-            self.transceiver.send(self.sw.on.code, self.sw.on.pulse, protocol);
+            let out = getSendObject(self.sw, true);
+            addCode(out,sentCodes);
+            self.transceiver.send(out);
             self.log('Sent on code for %s',self.sw.name);
         } else {
-            addCode(self.sw.off.code,sentCodes);
-            let protocol = self.sw.off.protocol?self.sw.off.protocol:1;
-            self.transceiver.send(self.sw.off.code, self.sw.off.pulse, protocol);
+            let out = getSendObject(self.sw, false);
+            addCode(out,sentCodes);
+            self.transceiver.send(out);
             self.log('Sent off code for %s',self.sw.name);
         }
         cb(null);
@@ -103,13 +107,15 @@ function ArduinoSwitchAccessory(sw, log, config, transceiver) {
         self.currentState = false;
         self.service.getCharacteristic(Characteristic.On).updateValue(self.currentState);
     },self.throttle,self);
-}
-ArduinoSwitchAccessory.prototype.notify = function(code) {
-    let self = this;
-    if(this.sw.on.code == code) {
-        self.notifyOn();
-    } else if (this.sw.off.code == code) {
-        self.notifyOff();
+}//TODO: code stuff
+ArduinoSwitchAccessory.prototype.notify = function(message) {
+    if(isSameAsSwitch(message,this.sw)) {
+      if(getSwitchState(message,this.sw)){
+        this.notifyOn();
+      }
+      else{
+        this.notifyOff();
+      }
     }
 }
 ArduinoSwitchAccessory.prototype.getServices = function() {
@@ -118,8 +124,6 @@ ArduinoSwitchAccessory.prototype.getServices = function() {
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
     .setCharacteristic(Characteristic.Manufacturer, '433 MHz RC')
-    .setCharacteristic(Characteristic.Model, 'Pulse-'+self.sw.on.pulse)
-    .setCharacteristic(Characteristic.SerialNumber, self.sw.on.code+'-'+self.sw.off.code)
     .setCharacteristic(Characteristic.FirmwareRevision, process.env.version)
     .setCharacteristic(Characteristic.HardwareRevision, '1.0.0');
     services.push(service);
@@ -127,6 +131,7 @@ ArduinoSwitchAccessory.prototype.getServices = function() {
     return services;
 }
 
+/** BUTTON ACCESSORY CLASS **/
 function ArduinoButtonAccessory(sw, log, config) {
     let self = this;
     self.name = sw.name;
@@ -159,9 +164,9 @@ function ArduinoButtonAccessory(sw, log, config) {
         setTimeout(this.resetButton.bind(this), 1000);
     },self.throttle,self);
 }
-ArduinoButtonAccessory.prototype.notify = function(code) {
-    if(this.sw.code == code) {
-        this.notifyOn();
+ArduinoButtonAccessory.prototype.notify = function(message) {
+    if(isSameAsSwitch(message,this.sw,true)) {
+      this.notifyOn();
     }
 }
 ArduinoButtonAccessory.prototype.resetButton = function() {
@@ -174,8 +179,6 @@ ArduinoButtonAccessory.prototype.getServices = function() {
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
     .setCharacteristic(Characteristic.Manufacturer, '433 MHz RC')
-    .setCharacteristic(Characteristic.Model, 'Pulse-'+self.sw.pulse)
-    .setCharacteristic(Characteristic.SerialNumber, self.sw.code)
     .setCharacteristic(Characteristic.FirmwareRevision, process.env.version)
     .setCharacteristic(Characteristic.HardwareRevision, '1.0.0');
     services.push(service);
@@ -183,6 +186,7 @@ ArduinoButtonAccessory.prototype.getServices = function() {
     return services;
 }
 
+/** SMOKE ACCESSORY CLASS **/
 function ArduinoSmokeAccessory(sw, log, config) {
     let self = this;
     self.name = sw.name;
@@ -203,9 +207,9 @@ function ArduinoSmokeAccessory(sw, log, config) {
         setTimeout(this.resetButton.bind(this), 60000);
     },self.throttle,self);
 }
-ArduinoSmokeAccessory.prototype.notify = function(code) {
-    if(this.sw.code == code) {
-        this.notifyOn();
+ArduinoSmokeAccessory.prototype.notify = function(message) {
+    if(isSameAsSwitch(message,this.sw,true)) {
+      this.notifyOn();
     }
 }
 ArduinoSmokeAccessory.prototype.resetButton = function() {
@@ -218,8 +222,6 @@ ArduinoSmokeAccessory.prototype.getServices = function() {
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
     .setCharacteristic(Characteristic.Manufacturer, '433 MHz RC')
-    .setCharacteristic(Characteristic.Model, 'Pulse-'+self.sw.pulse)
-    .setCharacteristic(Characteristic.SerialNumber, self.sw.code)
     .setCharacteristic(Characteristic.FirmwareRevision, process.env.version)
     .setCharacteristic(Characteristic.HardwareRevision, '1.0.0');
     services.push(service);
@@ -227,6 +229,7 @@ ArduinoSmokeAccessory.prototype.getServices = function() {
     return services;
 }
 
+/** WATER ACCESSORY CLASS **/
 function ArduinoWaterAccessory(sw, log, config) {
     let self = this;
     self.name = sw.name;
@@ -247,9 +250,9 @@ function ArduinoWaterAccessory(sw, log, config) {
         setTimeout(this.resetButton.bind(this), 60000);
     },self.throttle,self);
 }
-ArduinoWaterAccessory.prototype.notify = function(code) {
-    if(this.sw.code == code) {
-        this.notifyOn();
+ArduinoWaterAccessory.prototype.notify = function(message) {
+    if(isSameAsSwitch(message,this.sw,true)) {
+      this.notifyOn();
     }
 }
 ArduinoWaterAccessory.prototype.resetButton = function() {
@@ -262,8 +265,6 @@ ArduinoWaterAccessory.prototype.getServices = function() {
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, self.name)
     .setCharacteristic(Characteristic.Manufacturer, '433 MHz RC')
-    .setCharacteristic(Characteristic.Model, 'Pulse-'+self.sw.pulse)
-    .setCharacteristic(Characteristic.SerialNumber, self.sw.code)
     .setCharacteristic(Characteristic.FirmwareRevision, process.env.version)
     .setCharacteristic(Characteristic.HardwareRevision, '1.0.0');
     services.push(service);
@@ -271,31 +272,7 @@ ArduinoWaterAccessory.prototype.getServices = function() {
     return services;
 }
 
-
-function checkCode(value, array, remove){
-    value = parseInt(value);
-    var index = array.indexOf(value);
-    if(index>-1){
-        if(remove) array.splice(index, 1);
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-function addCode(value, array){
-    value = parseInt(value);
-    array.push(value);
-    setTimeout(checkCode, 2000, value, array, true);
-}
-
-module.exports = function(homebridge) {
-    Service = homebridge.hap.Service;
-    Characteristic = homebridge.hap.Characteristic;
-    homebridge.registerPlatform("homebridge-433-arduino", "ArduinoRCSwitch", ArduinoSwitchPlatform);
-}
-
+/** HELPERS SECTION **/
 var helpers = {
   throttle: function(fn, threshold, scope) {
     threshold || (threshold = 250);
@@ -312,4 +289,153 @@ var helpers = {
       }
     };
   }
+}
+
+function checkCode(value, array, remove){
+    var index = array.findIndex(imSameMessage, value);
+    if(index>-1){
+        if(remove) array.splice(index, 1);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+function addCode(value, array){
+    array.push(value);
+    setTimeout(checkCode, 2000, value, array, true);
+}
+
+function getSwitchState(message,sw){
+    if(message.code && sw.on){
+        if(message.code == sw.on.code) return true;
+    }else if(message.code && sw.off){
+        if(message.code == sw.off.code) return true;
+    }else if(message.code && sw.code){
+        if(message.code == sw.code) return true;
+    }else if(message.message && message.message.state){
+        let state = message.message.state;
+        if(state == "on") return true;
+        if(state == "off") return false;
+        if(state == "up") return true;
+        if(state == "down") return false;
+        if(state === 1) return true;
+        if(state === 0) return false;
+        if(state === "1") return true;
+        if(state === "0") return false;
+    }
+    return false;
+}
+//TODO not needed since isSameMessage on/off addition?
+function isSameAsSwitch(message, sw, compareState = false){
+    if(sw.on && sw.off){ //on/off format
+        if(isSameMessage(message,sw.on,compareState)) return true;
+        if(isSameMessage(message,sw.off,compareState)) return true;
+    }else{ //button/espilight format
+        if(isSameMessage(message,sw,compareState)) return true;
+    }
+    return false;
+}
+function imSameMessage(message){
+    //int idx = sentCodes.findIndex(imSameMessage, sw);
+    //"this" is compare message info or switch info
+    return isSameMessage(message, this, true);
+}
+function isSameMessage(message, prototype, compareState = false){
+    if(!message || !prototype) return;
+    if(message.code && prototype.code){
+        if(prototype.code == message.code) return true;
+    }
+    else if(message.code && prototype.on){
+        if(prototype.on.code == message.code) return true;
+    }
+    else if(message.code && prototype.off){
+        if(prototype.off.code == message.code) return true;
+    }
+    //TODO: other kinds of espilight messages without id/unit
+    else if(message.type && prototype.type){
+        if(prototype.type == message.type &&
+        prototype.message.id == message.message.id &&
+        prototype.message.unit == message.message.unit){
+            if(compareState){
+                if(prototype.message.state == message.message.state){
+                    return true;
+                }
+            }
+            else return true;
+        }
+    }
+    return false;
+}
+//make a new object to send
+function getSendObject(sw, on = undefined){
+    var out = {};
+    if(sw.on && on === true){
+        out.code = sw.on.code;
+        out.pulse = sw.on.pulse;
+        out.protocol = sw.on.protocol?sw.on.protocol:1;
+    }
+    else if(sw.off && on === false){
+        out.code = sw.off.code;
+        out.pulse = sw.off.pulse;
+        out.protocol = sw.off.protocol?sw.off.protocol:1;
+    }
+    else if(sw.code){
+        out.code = sw.code;
+        out.pulse = sw.pulse;
+        out.protocol = sw.protocol?sw.protocol:1;
+    }
+    else if(sw.type && sw.message){ //different for on/off switches
+        out.type = sw.type;
+        out.message = makeTransmitMessage(sw.message, on);
+    }
+    return out;
+}
+//change message from "state":"off" to "off":1 etc.
+//if on is undefined use state, else change to value of on
+function makeTransmitMessage(message, on = undefined){
+    if(!message) return message;
+    var clonedMessage = JSON.parse(JSON.stringify(message));
+    if(clonedMessage.state){
+        let state = clonedMessage.state;
+        if(state == "on"){
+            if(on === undefined){
+                clonedMessage.on = 1;
+            }else if(on){
+                clonedMessage.on = 1;
+            }else{
+                clonedMessage.off = 1;
+            }
+        }
+        else if(state == "up"){
+            if(on === undefined){
+                clonedMessage.up = 1;
+            }else if(on){
+                clonedMessage.up = 1;
+            }else{
+                clonedMessage.down = 1;
+            }
+        }
+        else if(state == "off"){
+            if(on === undefined){
+                clonedMessage.off = 1;
+            }else if(on){
+                clonedMessage.on = 1;
+            }else{
+                clonedMessage.off = 1;
+            }
+        }
+        else if(state == "down"){
+            if(on === undefined){
+                clonedMessage.down = 1;
+            }else if(on){
+                clonedMessage.up = 1;
+            }else{
+                clonedMessage.down = 1;
+            }
+        }
+        delete clonedMessage.state;
+    }
+    return clonedMessage;
 }

@@ -26,12 +26,13 @@ Most 433 MHz switches should work, heres a list of ones I or others tried:
 - Intertechno YWT-800 switch
 - Intertechno CMR-1000 actuator
 
-Even unsupported switches can be made to work, see below.
+Even unsupported switches can be made to work, see below. Optionally on ESP you can use ESPiLight to be able to control even more devices out of the box (see below).
 
 ## Installation
+This is the simple setup with an Arduino on the serial port and simple 433MHz receiver/sender pairs, see below for using CC1101 or ESP hardware as well as WiFi / Websockets for the connection.
 
-### On the Arduinos
-You will need two Arduino Micro devices. Other Arduinos should work too but you might have to adapt the pin numbers accordingly. I like the Micro because of its size and relative power.
+### On the Arduino
+You will need an Arduino Micro. Other Arduinos should work too but you might have to adapt the pin numbers accordingly. I like the Micro because of its size and relative power.
 
 You will also need a 433MHz sender/receiver pair. For the sender you can use basically any 433MHz module (e.g FS1000A). For the receiver the very cheap modules didn't work properly for me, try to get the "superheterodyne" (NOT superregeneration) receiver as it works MUCH better.
 
@@ -41,6 +42,7 @@ You will also need a 433MHz sender/receiver pair. For the sender you can use bas
 3. Connect a 433 MHz receiver to pin 3 and power on the Arduino Micro
 4. Connect a 433 MHz sender to pin 4 and power on the Arduino Micro
 5. Install the code below on the Arduino Micro and connect it to the homebridge server via USB
+
 ```
 /*
   Arduino code for homebridge-433-arduino v0.9
@@ -136,12 +138,12 @@ void loop() {
 ### On the homebridge server
 #### Install software
 1. Install homebridge using: npm install -g homebridge
-2. Install this plugin using: npm install -g homebridge-433-arduino
+2. Install this plugin using: npm install --unsafe-perm -g homebridge-433-arduino
 3. Update your configuration file. See the sample below.
 
 #### Configure config.json
 
-`serial_port` is the USB port you have your Arduino connected to, normally /dev/ttyACM0 on Raspberry Pi.
+`serial_port` is the USB port you have your Arduino connected to, normally /dev/ttyACM0 (Arduino) or /dev/ttyUSB0 (ESP) on Raspberry Pi.
 
 `switches` is the list of configured switches. When Homebridge is running the console will show the needed code and pulse values for any received 433MHz signals it can decode so you can find them there and enter them in your config.json file.
 
@@ -244,12 +246,66 @@ Decrease this value to get quicker response of 433 plugs in the aforementioned s
 
 `throttle` is the time in milliseconds that the incoming signal of a single button or switch will be throttled. This is to avoid switches triggering HomeKit multiple times when pressed. The default value is `500`.
 
-## Adding support for unsupported Switches
+### Adding support for unsupported Switches
 If you have a 433 device that doesn't work you can try and download a different version of the rcswitch library and run a "discovery application" that suggests how to extend the rcswitch.cpp file to add support for the unknown signal:
 
 https://github.com/Martin-Laclaustra/rc-switch/
 
 Download the modified rc-switch branch "protocollessreceiver", it includes the discovery code for Arduino. It should run as is on the 433 board for this project.
+
+## Advanced Installation (WIP)
+The installation above is the simple solution and works fine for many switches and with low-cost hardware. However an extended version of the Arduino code is available that allows using more powerful ESP hardware and supports CC1101 based transceivers.
+
+See here for the extended code and how to configure and use it: https://github.com/normen/arduino-433
+
+Read the above simple installation instructions before to understand how the library works in general.
+
+#### WiFi / Websockets
+When running on ESP hardware the library can optionally use WiFi / websockets instead of a serial port to connect to the transceiver, specify `host` & `port` of the transceiver in the config.json instead of `serial_port`.
+
+#### ESPiLight
+Optionally you can use the ESPiLight library instead of rc-switch which supports a wider range of 433MHz devices. When using it (configured in the Arduino code) the format of the messages changes from code/pulse/protocol to type and message (different for each switch type), see below for an example.
+
+Note that for some switches not all of the received info that is given in the homebridge log needs to be added to the config.json. Usually "id", "unit" and "state" are enough.
+
+#### CC1101
+The extended library also allows using a CC1101 based transceiver with either Arduino or ESP hardware. Note that this transceiver is usually 3.3V only and should not be used with Arduino Micro (5V), Arduino Nano or ESP8266 will work (3.3V).
+
+### Example config.json with Websockets & ESPPiLight
+Note that for switches you can specify "state":"on" or "state":"off", they will still switch on and off as intended. For buttons you have to specify which of the two states you want to use as a button.
+
+```javascript
+"platforms": [
+    {
+      "platform": "ArduinoRCSwitch",
+      "name": "Arduino RC Switch Platform",
+      "host": "arduino-433",
+      "port": 80,
+      "switches": [
+        {
+          "name" : "My Device",
+          "type": "my_type",
+          "message":{
+            "id": "A3",
+            "unit": "60",
+            "state": "on"
+          }
+        }
+      ],
+      "buttons": [
+        {
+          "name" : "My Button",
+          "type": "my_type",
+          "message":{
+            "id": "B4",
+            "unit": "20",
+            "state": "off"
+          }
+        }
+      ]
+    }
+]
+```
 
 ## Credits
 
