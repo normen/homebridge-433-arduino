@@ -1,6 +1,6 @@
 {
   "name": "homebridge-433-arduino",
-  "version": "0.11.4",
+  "version": "0.11.5",
   "description": "Add bidirectional support for 433MHz switches to Homebridge using Arduino or ESP hardware.",
   "main": "index.js",
   "scripts": {

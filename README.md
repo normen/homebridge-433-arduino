@@ -289,7 +289,8 @@ Note that for switches that report "up" and "down" for the state instead of "on"
             "id": "A3",
             "unit": 60
           }
-      },
+        }
+      ],
       "buttons": [
         {
           "name" : "My Button",

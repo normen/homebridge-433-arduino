@@ -3,7 +3,8 @@ const WebSocket = require('ws');
 function WebSocketClient(log){
 	this.log = log;
 	this.number = 0;	// Message number
-	this.autoReconnectInterval = 10*1000;	// ms
+	this.autoReconnectInterval = 20*1000;	// ms
+	this.pongReturned = true;
 }
 WebSocketClient.prototype.open = function(url){
 	let self = this;
@@ -11,6 +12,8 @@ WebSocketClient.prototype.open = function(url){
 	this.instance = new WebSocket(this.url);
 	this.instance.on('open',()=>{
 		this.onopen();
+		self.pongReturned = true;
+		self.checkPing();
 	});
 	this.instance.on('message',(data,flags)=>{
 		this.number ++;
@@ -38,6 +41,19 @@ WebSocketClient.prototype.open = function(url){
 		}
 		this.onerror(e);
 	});
+	this.instance.on('pong',(e)=>{
+		self.pongReturned = true;
+	});
+}
+WebSocketClient.prototype.checkPing = function(){
+	if(!this.pongReturned){
+		this.instance.terminate();
+	}else{
+		this.pongReturned = false;
+		this.instance.ping("ping");
+		clearTimeout(this.pingTimeout);
+		this.pingTimeout = setTimeout(this.checkPing.bind(this), this.autoReconnectInterval);
+	}
 }
 WebSocketClient.prototype.send = function(data,option){
 	try{
