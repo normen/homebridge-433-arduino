@@ -313,7 +313,7 @@ function getSwitchState(message,sw){
     if(message.code && sw.on){
         if(message.code == sw.on.code) return true;
     }else if(message.code && sw.off){
-        if(message.code == sw.off.code) return true;
+        if(message.code == sw.off.code) return false;
     }else if(message.code && sw.code){
         if(message.code == sw.code) return true;
     }else if(message.message && message.message.state){
