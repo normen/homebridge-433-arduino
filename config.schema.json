@@ -81,44 +81,44 @@
             }
           },
           "on":{
-            "title": "On Code",
+            "title": "On Message",
             "type": "object",
             "required": false,
             "properties":{
               "code":{
-                "title":"On Code",
+                "title":"Code",
                 "type":"number",
                 "required":false
               },
               "pulse":{
-                "title":"On Pulse",
+                "title":"Pulse",
                 "type":"number",
                 "required":false
               },
               "protocol":{
-                "title":"On Protocol",
+                "title":"Protocol",
                 "type":"number",
                 "required":false
               }
             }
           },
           "off":{
-            "title": "Off Code",
+            "title": "Off Message",
             "type": "object",
             "required": false,
             "properties":{
               "code":{
-                "title":"Off Code",
+                "title":"Code",
                 "type":"number",
                 "required":false
               },
               "pulse":{
-                "title":"Off Pulse",
+                "title":"Pulse",
                 "type":"number",
                 "required":false
               },
               "protocol":{
-                "title":"Off Protocol",
+                "title":"Protocol",
                 "type":"number",
                 "required":false
               }
@@ -174,17 +174,17 @@
             }
           },
           "code":{
-            "title":"On Code",
+            "title":"Code",
             "type":"number",
             "required":false
           },
           "pulse":{
-            "title":"On Pulse",
+            "title":"Pulse",
             "type":"number",
             "required":false
           },
           "protocol":{
-            "title":"On Protocol",
+            "title":"Protocol",
             "type":"number",
             "required":false
           }
@@ -238,17 +238,17 @@
             }
           },
           "code":{
-            "title":"On Code",
+            "title":"Code",
             "type":"number",
             "required":false
           },
           "pulse":{
-            "title":"On Pulse",
+            "title":"Pulse",
             "type":"number",
             "required":false
           },
           "protocol":{
-            "title":"On Protocol",
+            "title":"Protocol",
             "type":"number",
             "required":false
           }
@@ -302,17 +302,17 @@
             }
           },
           "code":{
-            "title":"On Code",
+            "title":"Code",
             "type":"number",
             "required":false
           },
           "pulse":{
-            "title":"On Pulse",
+            "title":"Pulse",
             "type":"number",
             "required":false
           },
           "protocol":{
-            "title":"On Protocol",
+            "title":"Protocol",
             "type":"number",
             "required":false
           }
@@ -353,17 +353,29 @@
               "key": "switches[].message",
               "condition": { "functionBody": "return model.use_espilight" },
               "items":[
-                "switches[].message.id",
-                "switches[].message.unit"
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "switches[].message.id",
+                    "switches[].message.unit"
+                  ]
+                }
               ]
             },
             {
               "key": "switches[].on",
               "condition": { "functionBody": "return !model.use_espilight" },
               "items":[
-                "switches[].on.code",
-                "switches[].on.pulse",
-                "switches[].on.protocol"
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "switches[].on.code",
+                    "switches[].on.pulse",
+                    "switches[].on.protocol"
+                  ]
+                }
               ]
             },
             {
@@ -371,9 +383,15 @@
               "type": "object",
               "condition": { "functionBody": "return !model.use_espilight" },
               "items":[
-                "switches[].off.code",
-                "switches[].off.pulse",
-                "switches[].off.protocol"
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "switches[].off.code",
+                    "switches[].off.pulse",
+                    "switches[].off.protocol"
+                  ]
+                }
               ]
             }
           ]
@@ -411,9 +429,15 @@
               "key": "buttons[].message",
               "condition": { "functionBody": "return model.use_espilight" },
               "items":[
-                "buttons[].message.id",
-                "buttons[].message.unit",
-                "buttons[].message.state"
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "buttons[].message.id",
+                    "buttons[].message.unit",
+                    "buttons[].message.state"
+                  ]
+                }
               ]
             }
           ]
@@ -451,9 +475,15 @@
               "key": "sensors[].message",
               "condition": { "functionBody": "return model.use_espilight" },
               "items":[
-                "sensors[].message.id",
-                "sensors[].message.unit",
-                "sensors[].message.state"
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "sensors[].message.id",
+                    "sensors[].message.unit",
+                    "sensors[].message.state"
+                  ]
+                }
               ]
             }
           ]
@@ -491,9 +521,15 @@
               "key": "detectors[].message",
               "condition": { "functionBody": "return model.use_espilight" },
               "items":[
-                "detectors[].message.id",
-                "detectors[].message.unit",
-                "detectors[].message.state"
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "detectors[].message.id",
+                    "detectors[].message.unit",
+                    "detectors[].message.state"
+                  ]
+                }
               ]
             }
           ]
