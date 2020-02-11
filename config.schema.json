@@ -1,7 +1,7 @@
 {
   "pluginAlias": "ArduinoRCSwitch",
   "pluginType": "platform",
-  "headerDisplay": "Configure your arduino board to use ESPiLight mode before using this panel.",
+  "headerDisplay": "For setting up the USB/WiFi transceiver see https://github.com/normen/arduino-433",
   "footerDisplay": "For help please see https://github.com/normen/homebridge-433-arduino",
   "schema": {
     "name": {
