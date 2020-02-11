@@ -1,0 +1,504 @@
+{
+  "pluginAlias": "ArduinoRCSwitch",
+  "pluginType": "platform",
+  "headerDisplay": "Configure your arduino board to use ESPiLight mode before using this panel.",
+  "footerDisplay": "For help please see https://github.com/normen/homebridge-433-arduino",
+  "schema": {
+    "name": {
+      "title": "Name",
+      "type": "string",
+      "default": "Arduino RC Switch Platform",
+      "required": true
+    },
+    "use_espilight": {
+      "title": "ESPiLight Mode",
+      "description": "Enable this if you have ESPiLight mode enabled on your arduino-433 transceiver",
+      "type": "boolean",
+      "required": false
+    },
+    "serial_port": {
+      "title": "Serial Port Name",
+      "description": "e.g. '/dev/ttyUSB0'",
+      "type": "string",
+      "required": false
+    },
+    "host": {
+      "title": "Websocket Server IP or Hostname",
+      "description": "e.g. 'arduino-433' - remove the serial port entry above to use WebSocket",
+      "type": "string",
+      "required": false
+    },
+    "port": {
+      "title": "Websocket Port Number",
+      "description": "usually not needed",
+      "type": "number",
+      "required": false
+    },
+    "switches": {
+      "title": "On/Off Switches",
+      "required": false,
+      "type": "array",
+      "items": {
+        "name": "Switch Config",
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "required": true
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string",
+            "description": "Your own hint to remember the switch",
+            "required": false
+          },
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "required": false
+          },
+          "message": {
+            "title": "Message",
+            "type": "object",
+            "required": false,
+            "properties":{
+              "id":{
+                "title":"ID",
+                "type":"string",
+                "required": false
+              },
+              "unit":{
+                "title":"Unit",
+                "type":"string",
+                "required": false
+              },
+              "state":{
+                "title":"State",
+                "type":"string",
+                "required": false
+              }
+            }
+          },
+          "on":{
+            "title": "On Code",
+            "type": "object",
+            "required": false,
+            "properties":{
+              "code":{
+                "title":"On Code",
+                "type":"number",
+                "required":false
+              },
+              "pulse":{
+                "title":"On Pulse",
+                "type":"number",
+                "required":false
+              },
+              "protocol":{
+                "title":"On Protocol",
+                "type":"number",
+                "required":false
+              }
+            }
+          },
+          "off":{
+            "title": "Off Code",
+            "type": "object",
+            "required": false,
+            "properties":{
+              "code":{
+                "title":"Off Code",
+                "type":"number",
+                "required":false
+              },
+              "pulse":{
+                "title":"Off Pulse",
+                "type":"number",
+                "required":false
+              },
+              "protocol":{
+                "title":"Off Protocol",
+                "type":"number",
+                "required":false
+              }
+            }
+          }
+        }
+      }
+    },
+    "buttons": {
+      "title": "Buttons",
+      "required": false,
+      "type": "array",
+      "items": {
+        "name": "Button Config",
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "required": true
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string",
+            "description": "Your own hint to remember the switch",
+            "required": false
+          },
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "required": false
+          },
+          "message": {
+            "title": "Message",
+            "type": "object",
+            "required": false,
+            "properties":{
+              "id":{
+                "title":"ID",
+                "type":"string",
+                "required": false
+              },
+              "unit":{
+                "title":"Unit",
+                "type":"string",
+                "required": false
+              },
+              "state":{
+                "title":"State",
+                "type":"string",
+                "required": false
+              }
+            }
+          },
+          "code":{
+            "title":"On Code",
+            "type":"number",
+            "required":false
+          },
+          "pulse":{
+            "title":"On Pulse",
+            "type":"number",
+            "required":false
+          },
+          "protocol":{
+            "title":"On Protocol",
+            "type":"number",
+            "required":false
+          }
+        }
+      }
+    },
+    "sensors": {
+      "title": "Water Sensors",
+      "required": false,
+      "type": "array",
+      "items": {
+        "name": "Sensor Config",
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "required": true
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string",
+            "description": "Your own hint to remember the switch",
+            "required": false
+          },
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "required": false
+          },
+          "message": {
+            "title": "Message",
+            "type": "object",
+            "required": false,
+            "properties":{
+              "id":{
+                "title":"ID",
+                "type":"string",
+                "required": false
+              },
+              "unit":{
+                "title":"Unit",
+                "type":"string",
+                "required": false
+              },
+              "state":{
+                "title":"State",
+                "type":"string",
+                "required": false
+              }
+            }
+          },
+          "code":{
+            "title":"On Code",
+            "type":"number",
+            "required":false
+          },
+          "pulse":{
+            "title":"On Pulse",
+            "type":"number",
+            "required":false
+          },
+          "protocol":{
+            "title":"On Protocol",
+            "type":"number",
+            "required":false
+          }
+        }
+      }
+    },
+    "detectors": {
+      "title": "Smoke Detectors",
+      "required": false,
+      "type": "array",
+      "items": {
+        "name": "Detector Config",
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "required": true
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string",
+            "description": "Your own hint to remember the switch",
+            "required": false
+          },
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "required": false
+          },
+          "message": {
+            "title": "Message",
+            "type": "object",
+            "required": false,
+            "properties":{
+              "id":{
+                "title":"ID",
+                "type":"string",
+                "required": false
+              },
+              "unit":{
+                "title":"Unit",
+                "type":"string",
+                "required": false
+              },
+              "state":{
+                "title":"State",
+                "type":"string",
+                "required": false
+              }
+            }
+          },
+          "code":{
+            "title":"On Code",
+            "type":"number",
+            "required":false
+          },
+          "pulse":{
+            "title":"On Pulse",
+            "type":"number",
+            "required":false
+          },
+          "protocol":{
+            "title":"On Protocol",
+            "type":"number",
+            "required":false
+          }
+        }
+      }
+    }
+  },
+  "form": [
+    "name",
+    "serial_port",
+    {
+      "type": "section",
+      "expandable": true,
+      "expanded": false,
+      "title": "WiFi / WebSocket",
+      "items": [
+        "host",
+        "port"
+      ]
+    },
+    "use_espilight",
+    {
+      "type": "fieldset",
+      "expandable": true,
+      "expanded": false,
+      "title": "On/Off Switches",
+      "items": [
+        {
+          "key": "switches",
+          "items":[
+            "switches[].name",
+            "switches[].hint",
+            {
+              "key": "switches[].type",
+              "condition": { "functionBody": "return model.use_espilight" }
+            },
+            {
+              "key": "switches[].message",
+              "condition": { "functionBody": "return model.use_espilight" },
+              "items":[
+                "switches[].message.id",
+                "switches[].message.unit"
+              ]
+            },
+            {
+              "key": "switches[].on",
+              "condition": { "functionBody": "return !model.use_espilight" },
+              "items":[
+                "switches[].on.code",
+                "switches[].on.pulse",
+                "switches[].on.protocol"
+              ]
+            },
+            {
+              "key": "switches[].off",
+              "type": "object",
+              "condition": { "functionBody": "return !model.use_espilight" },
+              "items":[
+                "switches[].off.code",
+                "switches[].off.pulse",
+                "switches[].off.protocol"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "expandable": true,
+      "expanded": false,
+      "title": "Buttons",
+      "items": [
+        {
+          "key": "buttons",
+          "items":[
+            "buttons[].name",
+            "buttons[].hint",
+            {
+              "key": "buttons[].code",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "buttons[].pulse",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "buttons[].protocol",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "buttons[].type",
+              "condition": { "functionBody": "return model.use_espilight" }
+            },
+            {
+              "key": "buttons[].message",
+              "condition": { "functionBody": "return model.use_espilight" },
+              "items":[
+                "buttons[].message.id",
+                "buttons[].message.unit",
+                "buttons[].message.state"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "expandable": true,
+      "expanded": false,
+      "title": "Water Sensors",
+      "items": [
+        {
+          "key": "sensors",
+          "items":[
+            "sensors[].name",
+            "sensors[].hint",
+            {
+              "key": "sensors[].code",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "sensors[].pulse",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "sensors[].protocol",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "sensors[].type",
+              "condition": { "functionBody": "return model.use_espilight" }
+            },
+            {
+              "key": "sensors[].message",
+              "condition": { "functionBody": "return model.use_espilight" },
+              "items":[
+                "sensors[].message.id",
+                "sensors[].message.unit",
+                "sensors[].message.state"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "expandable": true,
+      "expanded": false,
+      "title": "Smoke Detectors",
+      "items": [
+        {
+          "key": "detectors",
+          "items":[
+            "detectors[].name",
+            "detectors[].hint",
+            {
+              "key": "detectors[].code",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "detectors[].pulse",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "detectors[].protocol",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "detectors[].type",
+              "condition": { "functionBody": "return model.use_espilight" }
+            },
+            {
+              "key": "detectors[].message",
+              "condition": { "functionBody": "return model.use_espilight" },
+              "items":[
+                "detectors[].message.id",
+                "detectors[].message.unit",
+                "detectors[].message.state"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
