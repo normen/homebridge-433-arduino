@@ -2,7 +2,7 @@
   "pluginAlias": "ArduinoRCSwitch",
   "pluginType": "platform",
   "headerDisplay": "For setting up the USB/WiFi transceiver see https://github.com/normen/arduino-433",
-  "footerDisplay": "For help please see https://github.com/normen/homebridge-433-arduino",
+  "footerDisplay": "For help please see https://github.com/normen/homebridge-433-arduino/wiki",
   "schema": {
     "name": {
       "title": "Name",
@@ -31,6 +31,18 @@
     "port": {
       "title": "Websocket Port Number",
       "description": "usually not needed",
+      "type": "number",
+      "required": false
+    },
+    "input_output_timeout": {
+      "title": "I/O Timeout",
+      "description": "radio silence time after receiving to avoid mixing signals, defaults to 100(ms)",
+      "type": "number",
+      "required": false
+    },
+    "throttle": {
+      "title": "Input Message Throttle",
+      "description": "throttle input messages to not trigger homekit too often if buttons send a lot of signals, default 500(ms)",
       "type": "number",
       "required": false
     },
@@ -143,7 +155,7 @@
           "hint": {
             "title": "Hint",
             "type": "string",
-            "description": "Your own hint to remember the switch",
+            "description": "Your own hint to remember the button",
             "required": false
           },
           "type": {
@@ -207,7 +219,7 @@
           "hint": {
             "title": "Hint",
             "type": "string",
-            "description": "Your own hint to remember the switch",
+            "description": "Your own hint to remember the sensor",
             "required": false
           },
           "type": {
@@ -271,7 +283,7 @@
           "hint": {
             "title": "Hint",
             "type": "string",
-            "description": "Your own hint to remember the switch",
+            "description": "Your own hint to remember the detector",
             "required": false
           },
           "type": {
@@ -331,6 +343,16 @@
       "items": [
         "host",
         "port"
+      ]
+    },
+    {
+      "type": "section",
+      "expandable": true,
+      "expanded": false,
+      "title": "Advanced",
+      "items": [
+        "input_output_timeout",
+        "throttle"
       ]
     },
     "use_espilight",
