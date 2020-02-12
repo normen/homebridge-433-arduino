@@ -49,13 +49,18 @@ ArduinoSwitchPlatform.prototype.accessories = function(callback) {
 }
 ArduinoSwitchPlatform.prototype.receiveMessage = function(value) {
     let self = this;
+    var found = false;
     if(!checkCode(value, sentCodes, false) && self.accessories) {
-        try{
-            self.log(JSON.stringify(value));
-        }catch (e){this.log(e)}
         self.accessories.forEach(function(accessory) {
-            accessory.notify.call(accessory, value);
+            if(accessory.notify.call(accessory, value)) found = true;
         });
+    }else{
+      found = true;
+    }
+    if(!found){
+      try{
+          self.log(JSON.stringify(value));
+      }catch (e){this.log(e)}
     }
 }
 
@@ -118,7 +123,9 @@ ArduinoSwitchAccessory.prototype.notify = function(message) {
       else{
         this.notifyOff();
       }
+      return true;
     }
+    return false;
 }
 ArduinoSwitchAccessory.prototype.getServices = function() {
     let self = this;
@@ -169,7 +176,9 @@ function ArduinoButtonAccessory(sw, log, config) {
 ArduinoButtonAccessory.prototype.notify = function(message) {
     if(isSameAsSwitch(message,this.sw,true)) {
       this.notifyOn();
+      return true;
     }
+    return false;
 }
 ArduinoButtonAccessory.prototype.resetButton = function() {
     this.currentState = false;
@@ -212,7 +221,9 @@ function ArduinoSmokeAccessory(sw, log, config) {
 ArduinoSmokeAccessory.prototype.notify = function(message) {
     if(isSameAsSwitch(message,this.sw,true)) {
       this.notifyOn();
+      return true;
     }
+    return false;
 }
 ArduinoSmokeAccessory.prototype.resetButton = function() {
     this.currentState = false;
@@ -255,7 +266,9 @@ function ArduinoWaterAccessory(sw, log, config) {
 ArduinoWaterAccessory.prototype.notify = function(message) {
     if(isSameAsSwitch(message,this.sw,true)) {
       this.notifyOn();
+      return true;
     }
+    return false;
 }
 ArduinoWaterAccessory.prototype.resetButton = function() {
     this.currentState = false;
@@ -453,6 +466,19 @@ function makeTransmitMessage(message, on = undefined){
     }
     else if(on !== undefined){
         clonedMessage.off = 1;
+    }
+    //make id and unit numbers if possible
+    if(clonedMessage.id){
+      let conv = Number(clonedMessage.id);
+      if(!Number.isNaN(conv)){
+        clonedMessage.id = conv;
+      }
+    }
+    if(clonedMessage.unit){
+      let conv = Number(clonedMessage.unit);
+      if(!Number.isNaN(conv)){
+        clonedMessage.unit = conv;
+      }
     }
     return clonedMessage;
 }
