@@ -330,6 +330,70 @@
           }
         }
       }
+    },
+    "motion": {
+      "title": "Motion Detectors",
+      "required": false,
+      "type": "array",
+      "items": {
+        "name": "Detector Config",
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "required": true
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string",
+            "description": "Your own hint to remember the detector",
+            "required": false
+          },
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "required": false
+          },
+          "message": {
+            "title": "Message",
+            "type": "object",
+            "required": false,
+            "properties":{
+              "id":{
+                "title":"ID",
+                "type":"string",
+                "required": false
+              },
+              "unit":{
+                "title":"Unit",
+                "type":"string",
+                "required": false
+              },
+              "state":{
+                "title":"State",
+                "type":"string",
+                "required": false
+              }
+            }
+          },
+          "code":{
+            "title":"Code",
+            "type":"number",
+            "required":false
+          },
+          "pulse":{
+            "title":"Pulse",
+            "type":"number",
+            "required":false
+          },
+          "protocol":{
+            "title":"Protocol",
+            "type":"number",
+            "required":false
+          }
+        }
+      }
     }
   },
   "form": [
@@ -550,6 +614,52 @@
                     "detectors[].message.id",
                     "detectors[].message.unit",
                     "detectors[].message.state"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "expandable": true,
+      "expanded": false,
+      "title": "Motion Detectors",
+      "items": [
+        {
+          "key": "motion",
+          "items":[
+            "motion[].name",
+            "motion[].hint",
+            {
+              "key": "motion[].code",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "motion[].pulse",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "motion[].protocol",
+              "condition": { "functionBody": "return !model.use_espilight" }
+            },
+            {
+              "key": "motion[].type",
+              "condition": { "functionBody": "return model.use_espilight" }
+            },
+            {
+              "key": "motion[].message",
+              "condition": { "functionBody": "return model.use_espilight" },
+              "items":[
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "motion[].message.id",
+                    "motion[].message.unit",
+                    "motion[].message.state"
                   ]
                 }
               ]

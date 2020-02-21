@@ -50,6 +50,11 @@ ArduinoSwitchPlatform.prototype.accessories = function (callback) {
       self.accessories.push(new ArduinoWaterAccessory(sw, self.log, self.config));
     });
   }
+  if (self.config.motion) {
+    self.config.motion.forEach(function (sw) {
+      self.accessories.push(new ArduinoMotionAccessory(sw, self.log, self.config));
+    });
+  }
   setTimeout(self.listen.bind(self), 10);
   callback(self.accessories);
 };
@@ -280,6 +285,51 @@ ArduinoWaterAccessory.prototype.resetButton = function () {
   this.service.getCharacteristic(Characteristic.LeakDetected).updateValue(this.currentState);
 };
 ArduinoWaterAccessory.prototype.getServices = function () {
+  const self = this;
+  var services = [];
+  var service = new Service.AccessoryInformation();
+  service.setCharacteristic(Characteristic.Name, self.name)
+    .setCharacteristic(Characteristic.Manufacturer, '433 MHz RC')
+    .setCharacteristic(Characteristic.FirmwareRevision, process.env.version)
+    .setCharacteristic(Characteristic.HardwareRevision, '1.0.0');
+  services.push(service);
+  services.push(self.service);
+  return services;
+};
+
+/** MOTION DETECTOR ACCESSORY CLASS **/
+function ArduinoMotionAccessory (sw, log, config) {
+  const self = this;
+  self.name = sw.name;
+  self.sw = sw;
+  self.log = log;
+  self.config = config;
+  self.currentState = false;
+  self.throttle = config.throttle ? config.throttle : 10000;
+  self.service = new Service.MotionSensor(self.name);
+  self.service.getCharacteristic(Characteristic.MotionDetected).value = self.currentState;
+  self.service.getCharacteristic(Characteristic.MotionDetected).on('get', function (cb) {
+    cb(null, self.currentState);
+  });
+  self.notifyOn = helpers.throttle(function () {
+    this.log('Received motion detector code for %s', this.sw.name);
+    this.currentState = true;
+    this.service.getCharacteristic(Characteristic.MotionDetected).updateValue(this.currentState);
+    setTimeout(this.resetButton.bind(this), 10000);
+  }, self.throttle, self);
+}
+ArduinoMotionAccessory.prototype.notify = function (message) {
+  if (isSameAsSwitch(message, this.sw, true)) {
+    this.notifyOn();
+    return true;
+  }
+  return false;
+};
+ArduinoMotionAccessory.prototype.resetButton = function () {
+  this.currentState = false;
+  this.service.getCharacteristic(Characteristic.MotionDetected).updateValue(this.currentState);
+};
+ArduinoMotionAccessory.prototype.getServices = function () {
   const self = this;
   var services = [];
   var service = new Service.AccessoryInformation();

@@ -112,6 +112,8 @@ Buttons only work for receiving signals.
 
 - `sensors` is a list of configured leak sensors. Leak sensors will only report their current state (leak detected or not).
 
+- `motion` is a list of configured motion sensors. Motion sensors will only report their current state (motion detected or not).
+
 ##### Optional settings
 - `host` is the hostname of the WiFi transceiver, not used when serial_port is given. When running on ESP hardware the library can optionally use WiFi / websockets instead of a serial port to connect to the transceiver.
 
