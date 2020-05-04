@@ -1,3 +1,5 @@
-node_modules
+node_modules/
 build
 .tern-project
+tags
+session.vim
