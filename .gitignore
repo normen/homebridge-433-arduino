@@ -1,6 +1,7 @@
 node_modules/
 .homebridge/
 build
+package-lock.json
 .tern-project
 tags
 session.vim
