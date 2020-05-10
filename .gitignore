@@ -1,4 +1,5 @@
 node_modules/
+.homebridge/
 build
 .tern-project
 tags
