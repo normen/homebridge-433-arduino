@@ -4,7 +4,7 @@
   "description": "Add bidirectional support for 433MHz switches to Homebridge using Arduino or ESP hardware.",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/homebridge/bin/homebridge -I -U ./.homebridge"
+    "test": "./node_modules/homebridge/bin/homebridge -P ./ -I -U ./.homebridge"
   },
   "repository": {
     "type": "git",
