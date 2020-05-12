@@ -1,5 +1,5 @@
 # homebridge-433-arduino
-[![NPM Version](https://img.shields.io/npm/v/homebridge-433-arduino.svg)](https://www.npmjs.com/package/homebridge-433-arduino)
+[![NPM Version](https://img.shields.io/npm/v/homebridge-433-arduino.svg)](https://www.npmjs.com/package/homebridge-433-arduino) [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
 A homebridge plugin to control 433MHz switches and receive 433MHz switch signals using an Arduino Micro or an ESP8266 / ESP32 connected via USB or WiFi to send and receive data.
 
