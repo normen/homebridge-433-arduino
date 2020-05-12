@@ -20,10 +20,11 @@ function ArduinoSwitchPlatform (log, config) {
     self.log('Enabling WebSocket mode using ', host + ':' + port);
     self.transceiver = new WebsocketTransceiver(self.log, host, port, ioTimeout);
   } else {
-    self.log('Two arduino Mode not available anymore!');
+    self.log('Warning: No USB transceiver configured.');
   }
 }
 ArduinoSwitchPlatform.prototype.listen = function () {
+  if(!this.transceiver) return;
   this.transceiver.setCallback(this.receiveMessage.bind(this));
   this.transceiver.init();
 };
