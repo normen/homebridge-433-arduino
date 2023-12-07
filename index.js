@@ -24,7 +24,7 @@ function ArduinoSwitchPlatform (log, config) {
   }
 }
 ArduinoSwitchPlatform.prototype.listen = function () {
-  if (!this.transceiver) return;
+  if(!this.transceiver) return;
   this.transceiver.setCallback(this.receiveMessage.bind(this));
   this.transceiver.init();
 };
@@ -362,7 +362,7 @@ var helpers = {
   }
 };
 
-function checkCode(value, array, remove) {
+function checkCode (value, array, remove) {
   var index = array.findIndex(imSameMessage, value);
   if (index > -1) {
     if (remove) array.splice(index, 1);
@@ -469,7 +469,7 @@ function getSendObject (sw, on = undefined) {
 }
 // change message from "state":"off" to "off":1 etc.
 // if on is undefined use state, else change to value of on
-function makeTransmitMessage(message, on = undefined) {
+function makeTransmitMessage (message, on = undefined) {
   if (!message) return message;
   try {
     var clonedMessage = JSON.parse(JSON.stringify(message));
