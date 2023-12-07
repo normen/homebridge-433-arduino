@@ -4,7 +4,7 @@ const WebsocketTransceiver = require('./tc-websocket');
 var sentCodes = [];
 
 /** PLATFORM CLASS **/
-function ArduinoSwitchPlatform (log, config) {
+function ArduinoSwitchPlatform(log, config) {
   const self = this;
   self.config = config;
   self.log = log;
@@ -24,7 +24,7 @@ function ArduinoSwitchPlatform (log, config) {
   }
 }
 ArduinoSwitchPlatform.prototype.listen = function () {
-  if(!this.transceiver) return;
+  if (!this.transceiver) return;
   this.transceiver.setCallback(this.receiveMessage.bind(this));
   this.transceiver.init();
 };
@@ -83,7 +83,7 @@ module.exports = function (homebridge) {
 };
 
 /** SWITCH ACCESSORY CLASS **/
-function ArduinoSwitchAccessory (sw, log, config, transceiver) {
+function ArduinoSwitchAccessory(sw, log, config, transceiver) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -152,7 +152,7 @@ ArduinoSwitchAccessory.prototype.getServices = function () {
 };
 
 /** BUTTON ACCESSORY CLASS **/
-function ArduinoButtonAccessory (sw, log, config) {
+function ArduinoButtonAccessory(sw, log, config) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -209,7 +209,7 @@ ArduinoButtonAccessory.prototype.getServices = function () {
 };
 
 /** SMOKE ACCESSORY CLASS **/
-function ArduinoSmokeAccessory (sw, log, config) {
+function ArduinoSmokeAccessory(sw, log, config) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -254,7 +254,7 @@ ArduinoSmokeAccessory.prototype.getServices = function () {
 };
 
 /** WATER ACCESSORY CLASS **/
-function ArduinoWaterAccessory (sw, log, config) {
+function ArduinoWaterAccessory(sw, log, config) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -299,7 +299,7 @@ ArduinoWaterAccessory.prototype.getServices = function () {
 };
 
 /** MOTION DETECTOR ACCESSORY CLASS **/
-function ArduinoMotionAccessory (sw, log, config) {
+function ArduinoMotionAccessory(sw, log, config) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -362,7 +362,7 @@ var helpers = {
   }
 };
 
-function checkCode (value, array, remove) {
+function checkCode(value, array, remove) {
   var index = array.findIndex(imSameMessage, value);
   if (index > -1) {
     if (remove) array.splice(index, 1);
@@ -372,33 +372,37 @@ function checkCode (value, array, remove) {
   }
 }
 
-function addCode (value, array) {
+function addCode(value, array) {
   array.push(value);
   setTimeout(checkCode, 2000, value, array, true);
 }
 
-function getSwitchState (message, sw) {
+function getSwitchState(message, sw) {
   if (message.code && sw.on) {
     if (message.code === sw.on.code) return true;
   } else if (message.code && sw.off) {
     if (message.code === sw.off.code) return false;
   } else if (message.code && sw.code) {
     if (message.code === sw.code) return true;
-  } else if (message.message && message.message.state) {
-    const state = message.message.state;
-    if (state === 'on') return true;
-    if (state === 'off') return false;
-    if (state === 'up') return true;
-    if (state === 'down') return false;
-    if (state === 1) return true;
-    if (state === 0) return false;
-    if (state === '1') return true;
-    if (state === '0') return false;
+  } else if (message.message.systemcode && message.message.unitcode && message.message.state && sw.message.systemcode && sw.message.unitcode) {
+    if (message.message.systemcode === sw.message.systemcode && message.message.unitcode === sw.message.unitcode) {
+      const state = message.message.state;
+      if (state === 'on') return true;
+      if (state === 'off') return false;
+      if (state === 'up') return true;
+      if (state === 'down') return false;
+      if (state === 1) return true;
+      if (state === 0) return false;
+      if (state === '1') return true;
+      if (state === '0') return false;
+      if (state === 'opened') return true;
+      if (state === 'closed') return false;
+    }
   }
   return false;
 }
 // TODO not needed since isSameMessage on/off addition?
-function isSameAsSwitch (message, sw, compareState = false) {
+function isSameAsSwitch(message, sw, compareState = false) {
   if (sw.on && sw.off) { // on/off format
     if (isSameMessage(message, sw.on, compareState)) return true;
     if (isSameMessage(message, sw.off, compareState)) return true;
@@ -407,12 +411,12 @@ function isSameAsSwitch (message, sw, compareState = false) {
   }
   return false;
 }
-function imSameMessage (message) {
+function imSameMessage(message) {
   // int idx = sentCodes.findIndex(imSameMessage, sw);
   // "this" is compare message info or switch info
   return isSameMessage(message, this, true);
 }
-function isSameMessage (message, prototype, compareState = false) {
+function isSameMessage(message, prototype, compareState = false) {
   if (!message || !prototype) return;
   if (message.code && prototype.code) {
     if (prototype.code == message.code) return true;
@@ -420,23 +424,30 @@ function isSameMessage (message, prototype, compareState = false) {
     if (prototype.on.code == message.code) return true;
   } else if (message.code && prototype.off) {
     if (prototype.off.code == message.code) return true;
-  }
-  // TODO: other kinds of espilight messages without id/unit
-  else if (message.type && prototype.type) {
+  } else if (message.type && prototype.type && prototype.message.id && message.message.id && prototype.message.unit && message.message.unit) {
     if (prototype.type == message.type &&
-        prototype.message.id == message.message.id &&
-        prototype.message.unit == message.message.unit) {
+      prototype.message.id == message.message.id &&
+      prototype.message.unit == message.message.unit) {
       if (compareState) {
         if (prototype.message.state == message.message.state) {
           return true;
         }
       } else return true;
     }
+  } else if (message.type && prototype.type && prototype.message.systemcode && message.message.systemcode && prototype.message.unitcode && message.message.unitcode) {
+    if (prototype.type == message.type &&
+      prototype.message.unitcode == message.message.unitcode &&
+      prototype.message.systemcode == message.message.systemcode) {
+        return true;
+    }
   }
   return false;
 }
+
+
+    
 // make a new object to send
-function getSendObject (sw, on = undefined) {
+function getSendObject(sw, on = undefined) {
   var out = {};
   if (sw.on && on === true) {
     out.code = sw.on.code;
@@ -458,7 +469,7 @@ function getSendObject (sw, on = undefined) {
 }
 // change message from "state":"off" to "off":1 etc.
 // if on is undefined use state, else change to value of on
-function makeTransmitMessage (message, on = undefined) {
+function makeTransmitMessage(message, on = undefined) {
   if (!message) return message;
   try {
     var clonedMessage = JSON.parse(JSON.stringify(message));
