@@ -426,8 +426,8 @@ function isSameMessage (message, prototype, compareState = false) {
     if (prototype.off.code == message.code) return true;
   } else if (message.type && prototype.type && prototype.message.id && message.message.id && prototype.message.unit && message.message.unit) {
     if (prototype.type == message.type &&
-      prototype.message.id == message.message.id &&
-      prototype.message.unit == message.message.unit) {
+        prototype.message.id == message.message.id &&
+        prototype.message.unit == message.message.unit) {
       if (compareState) {
         if (prototype.message.state == message.message.state) {
           return true;
