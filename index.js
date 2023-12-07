@@ -4,7 +4,7 @@ const WebsocketTransceiver = require('./tc-websocket');
 var sentCodes = [];
 
 /** PLATFORM CLASS **/
-function ArduinoSwitchPlatform(log, config) {
+function ArduinoSwitchPlatform (log, config) {
   const self = this;
   self.config = config;
   self.log = log;
@@ -83,7 +83,7 @@ module.exports = function (homebridge) {
 };
 
 /** SWITCH ACCESSORY CLASS **/
-function ArduinoSwitchAccessory(sw, log, config, transceiver) {
+function ArduinoSwitchAccessory (sw, log, config, transceiver) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -152,7 +152,7 @@ ArduinoSwitchAccessory.prototype.getServices = function () {
 };
 
 /** BUTTON ACCESSORY CLASS **/
-function ArduinoButtonAccessory(sw, log, config) {
+function ArduinoButtonAccessory (sw, log, config) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -209,7 +209,7 @@ ArduinoButtonAccessory.prototype.getServices = function () {
 };
 
 /** SMOKE ACCESSORY CLASS **/
-function ArduinoSmokeAccessory(sw, log, config) {
+function ArduinoSmokeAccessory (sw, log, config) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -254,7 +254,7 @@ ArduinoSmokeAccessory.prototype.getServices = function () {
 };
 
 /** WATER ACCESSORY CLASS **/
-function ArduinoWaterAccessory(sw, log, config) {
+function ArduinoWaterAccessory (sw, log, config) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -299,7 +299,7 @@ ArduinoWaterAccessory.prototype.getServices = function () {
 };
 
 /** MOTION DETECTOR ACCESSORY CLASS **/
-function ArduinoMotionAccessory(sw, log, config) {
+function ArduinoMotionAccessory (sw, log, config) {
   const self = this;
   self.name = sw.name;
   self.sw = sw;
@@ -372,12 +372,12 @@ function checkCode(value, array, remove) {
   }
 }
 
-function addCode(value, array) {
+function addCode (value, array) {
   array.push(value);
   setTimeout(checkCode, 2000, value, array, true);
 }
 
-function getSwitchState(message, sw) {
+function getSwitchState (message, sw) {
   if (message.code && sw.on) {
     if (message.code === sw.on.code) return true;
   } else if (message.code && sw.off) {
@@ -402,7 +402,7 @@ function getSwitchState(message, sw) {
   return false;
 }
 // TODO not needed since isSameMessage on/off addition?
-function isSameAsSwitch(message, sw, compareState = false) {
+function isSameAsSwitch (message, sw, compareState = false) {
   if (sw.on && sw.off) { // on/off format
     if (isSameMessage(message, sw.on, compareState)) return true;
     if (isSameMessage(message, sw.off, compareState)) return true;
@@ -411,12 +411,12 @@ function isSameAsSwitch(message, sw, compareState = false) {
   }
   return false;
 }
-function imSameMessage(message) {
+function imSameMessage (message) {
   // int idx = sentCodes.findIndex(imSameMessage, sw);
   // "this" is compare message info or switch info
   return isSameMessage(message, this, true);
 }
-function isSameMessage(message, prototype, compareState = false) {
+function isSameMessage (message, prototype, compareState = false) {
   if (!message || !prototype) return;
   if (message.code && prototype.code) {
     if (prototype.code == message.code) return true;
@@ -447,7 +447,7 @@ function isSameMessage(message, prototype, compareState = false) {
 
     
 // make a new object to send
-function getSendObject(sw, on = undefined) {
+function getSendObject (sw, on = undefined) {
   var out = {};
   if (sw.on && on === true) {
     out.code = sw.on.code;
