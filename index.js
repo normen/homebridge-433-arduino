@@ -443,9 +443,6 @@ function isSameMessage (message, prototype, compareState = false) {
   }
   return false;
 }
-
-
-    
 // make a new object to send
 function getSendObject (sw, on = undefined) {
   var out = {};
