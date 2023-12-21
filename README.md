@@ -1,3 +1,49 @@
+# DISCONTINUED
+
+As I moved my whole setup to a [FHEM](https://fhem.de) server with a [SIGNALduino](https://github.com/RFD-FHEM/SIGNALDuino) this project is now deprecated. This does *not* mean that its not working or will stop working in the future.
+
+The good news is that if you want to change your existing setup to a SIGNALDuino as well you probably already have all the hardware to do that.
+
+If you are using the CC1101 sender theres a good chance you can make a SIGNALDuino from that hardware! Check the [arduino-433](https://github.com/normen/arduino-433) project for instructions.
+
+## Migration to FHEM
+
+- Use max cube or build/buy a CUL 868MHz stick
+- Install [FHEM](https://fhem.de) on server
+- Install [fhem plugin](https://github.com/justme-1968/homebridge-fhem) in homebridge
+- Define siri in fhem
+- Define SIGNALduino in fhem
+- Discover devices, apply fixes below if needed
+- Set siriName for devices that should appear in HomeBridge
+- Optionally set homebridgeMapping for special devices
+- Profit
+
+#### AttrTemplates
+
+To ease the setup of some switches I created so called `attrTemplate` files to quickly apply settings to a discovered switch. Some switches needed some massaging to work correctly.
+
+Put [this file](normensTemplates.template) in your `/opt/FHEM/lib/AttrTemplate` folder, then apply the templates through the FHEMWEB UI `set` command or otherwise.
+
+- `433_Clarus_fix`
+  - Fix "Clarus" switches (cheap socket switches)
+  - Fixes wrong on/off codes ("Code 01 Unknown")
+  - Adapts pulse frequency so switches react
+- `433_Intertechno_fix`
+  - Fix "Intertechno" switches (especially old)
+  - Adapts pulse frequency so switches react better
+- `Add_Switches`
+  - Add "Buttons" for existing switches on/off presses
+- `Make_SmokeDetect`
+  - Makes a smoke detector from IT devices that are recognized as a switch
+  - Adds a watchdog that resets the "on" state automatically
+- `Make_LeakDetect`
+  - Makes a leak detector from IT devices that are recognized as a switch
+  - Adds a watchdog that resets the "on" state automatically
+- `Make_MotionSensor`
+  - Makes a motion detector from IT devices that are recognized as a switch
+  - Adds a watchdog that resets the "on" state automatically
+
+
 # homebridge-433-arduino
 [![NPM Version](https://img.shields.io/npm/v/homebridge-433-arduino.svg)](https://www.npmjs.com/package/homebridge-433-arduino) [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 

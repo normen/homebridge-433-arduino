@@ -1,0 +1,122 @@
+name:433_Clarus_fix
+filter:TYPE=IT
+desc:Fix a 433 "Clarus" device
+order:A0
+par:NEWDEF;new definition;{my $str = InternalVal("DEVICE", "DEF", "xx");;$str =~ s/0F F0/01 10/g;;$str}
+attr DEVICE ITclock 188
+attr DEVICE room IT_CLARUS
+modify DEVICE NEWDEF
+
+name:433_Intertechno_fix
+filter:TYPE=IT
+desc:Fix a 433 "Intertechno Old" device
+order:A1
+attr DEVICE ITclock 320
+attr DEVICE room IT_FIXED
+
+name:Add_Siri_Name
+desc:Make Siri name from device name (Room.Device -> Device Room)
+order:09
+par:SIRINAME;new name;{my $str = InternalVal("DEVICE", "NAME", "xx");;my @words = split(/\./, $str);;my $output = join(" ", reverse @words);;$output}
+attr DEVICE siriName SIRINAME
+
+name:Make_MotionSensor
+filter:TYPE=IT
+desc:Configure a 433 device as MotionSensor, set NAME beforehand!
+order:11
+par:ICON;ICON as set, defaults to motion_detector;{ AttrVal('DEVICE','icon','motion_detector') }
+attr DEVICE icon ICON
+attr DEVICE devStateIcon on:people_sensor off:message_presence
+# remove on/off
+attr DEVICE webCmd :
+attr DEVICE genericDeviceType MotionSensor
+attr DEVICE homebridgeMapping MotionDetected=state,values=on:1;;off:0
+attr DEVICE room IT_MOTION
+defmod DEVICE.wd watchdog DEVICE:on 00:00:05 DEVICE:off setreading DEVICE state off
+attr DEVICE.wd autoRestart 1
+attr DEVICE.wd room IT_MOTION
+
+name:Make_LeakSensor
+filter:TYPE=IT
+desc:Configure a 433 device as LeakSensor, set NAME beforehand!
+order:12
+par:ICON;ICON as set, defaults to humidity;{ AttrVal('DEVICE','icon','humidity') }
+attr DEVICE icon ICON
+attr DEVICE devStateIcon on:humidity off:general_ok
+# remove on/off
+attr DEVICE webCmd :
+attr DEVICE genericDeviceType LeakSensor
+attr DEVICE homebridgeMapping LeakDetected=state,values=on:1;;off:0
+attr DEVICE room IT_LEAK
+defmod DEVICE.wd watchdog DEVICE:on 00:01 DEVICE:off setreading DEVICE state off
+attr DEVICE.wd autoRestart 1
+attr DEVICE.wd room IT_LEAK
+
+name:Make_SmokeDetect
+filter:TYPE=IT
+desc:Configure a 433 device as Smoke Detector, set NAME beforehand!
+order:13
+par:ICON;ICON as set, defaults to secur_smoke_detector;{ AttrVal('DEVICE','icon','secur_smoke_detector') }
+attr DEVICE icon ICON
+attr DEVICE devStateIcon off:general_ok .*:secur_alarm
+# remove on/off
+attr DEVICE webCmd :
+attr DEVICE genericDeviceType SmokeSensor
+attr DEVICE homebridgeMapping SmokeDetected=state,values=on:SMOKE_DETECTED;;off:SMOKE_NOT_DETECTED
+attr DEVICE room IT_SMOKE
+defmod DEVICE.wd watchdog DEVICE:on 00:01 DEVICE:off setreading DEVICE state off
+attr DEVICE.wd autoRestart 1
+attr DEVICE.wd room IT_SMOKE
+
+name:Make_Button
+filter:TYPE=IT
+desc:Configure a 433 device as Single Press Button (auto reset), set NAME beforehand!
+order:14
+attr DEVICE devStateIcon on:ring .*:control_home
+# remove on/off
+attr DEVICE webCmd :
+attr DEVICE genericDeviceType StatelessProgrammableSwitch
+attr DEVICE homebridgeMapping ProgrammableSwitchEvent=state,values=on:SINGLE_PRESS,nocache=1,timeout=1
+attr DEVICE room IT_BUTTON
+defmod DEVICE.wd watchdog DEVICE:on 00:00:01 DEVICE:off setreading DEVICE state off
+attr DEVICE.wd autoRestart 1
+attr DEVICE.wd room IT_BUTTON
+
+name:Add_Switches
+#filter:TYPE=IT
+desc: Adds StatelessProgrammableSwitches for on/off, set NAME and siriName beforehand!
+order:20
+par:SIRINAME;new name;{my $str = InternalVal("DEVICE", "NAME", "xx");;my @words = split(/\./, $str);;my $generated = join(" ", reverse @words);;my $output = AttrVal("DEVICE", "siriName", $generated);;$generated}
+#par:SIRINAME;siri name;{AttrVal("DEVICE", "siriName", "SIRIGEN" )}
+defmod DEVICE.on dummy
+attr DEVICE.on genericDeviceType StatelessProgrammableSwitch
+attr DEVICE.on homebridgeMapping ProgrammableSwitchEvent=state,values=on:SINGLE_PRESS;;orf:SINGLE_PRESS,nocache=1,timeout=1
+attr DEVICE.on siriName SIRINAME On
+attr DEVICE.on room IT_SWITCH
+defmod DEVICE.on.notify notify DEVICE {if($EVENT eq "on"){ fhem "set DEVICE.on on" }}
+attr DEVICE.on.notify room IT_SWITCH
+defmod DEVICE.on.wd watchdog DEVICE.on:on 00:00:01 DEVICE.on:off setreading DEVICE.on state off
+attr DEVICE.on.wd room IT_SWITCH
+attr DEVICE.on.wd autoRestart 1
+defmod DEVICE.off dummy
+attr DEVICE.off genericDeviceType StatelessProgrammableSwitch
+attr DEVICE.off homebridgeMapping ProgrammableSwitchEvent=state,values=on:SINGLE_PRESS;;orf:SINGLE_PRESS,nocache=1,timeout=1
+attr DEVICE.off siriName SIRINAME Off
+attr DEVICE.off room IT_SWITCH
+defmod DEVICE.off.notify notify DEVICE {if($EVENT eq "off"){ fhem "set DEVICE.off on" }}
+attr DEVICE.off.notify room IT_SWITCH
+defmod DEVICE.off.wd watchdog DEVICE.off:on 00:00:01 DEVICE.off:off setreading DEVICE.off state off
+attr DEVICE.off.wd room IT_SWITCH
+attr DEVICE.off.wd autoRestart 1
+attr DEVICE room IT_SWITCH
+
+name:Remove_Switches
+#filter:TYPE=IT
+desc: Removes StatelessProgrammableSwitches for on/off
+order:21
+delete DEVICE.on
+delete DEVICE.on.notify
+delete DEVICE.on.wd
+delete DEVICE.off
+delete DEVICE.off.notify
+delete DEVICE.off.wd
