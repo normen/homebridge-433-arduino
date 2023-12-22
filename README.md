@@ -22,7 +22,7 @@ If you are using the CC1101 sender theres a good chance you can make a SIGNALDui
 
 To ease the setup of some switches I created so called `attrTemplate` files to quickly apply settings to a discovered switch. Some switches needed some massaging to work correctly.
 
-Put [this file](normensTemplates.template) in your `/opt/FHEM/lib/AttrTemplate` folder, then apply the templates through the FHEMWEB UI `set` command or otherwise.
+Put [this file](normensTemplates.template) in your `/opt/fhem/FHEM/lib/AttrTemplate` folder, then apply the templates through the FHEMWEB UI `set` command or otherwise.
 
 - `433_Clarus_fix`
   - Fix "Clarus" switches (cheap socket switches)
