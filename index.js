@@ -384,16 +384,20 @@ function getSwitchState (message, sw) {
     if (message.code === sw.off.code) return false;
   } else if (message.code && sw.code) {
     if (message.code === sw.code) return true;
-  } else if (message.message && message.message.state) {
-    const state = message.message.state;
-    if (state === 'on') return true;
-    if (state === 'off') return false;
-    if (state === 'up') return true;
-    if (state === 'down') return false;
-    if (state === 1) return true;
-    if (state === 0) return false;
-    if (state === '1') return true;
-    if (state === '0') return false;
+  } else if (message.message.systemcode && message.message.unitcode && message.message.state && sw.message.systemcode && sw.message.unitcode) {
+    if (message.message.systemcode === sw.message.systemcode && message.message.unitcode === sw.message.unitcode) {
+      const state = message.message.state;
+      if (state === 'on') return true;
+      if (state === 'off') return false;
+      if (state === 'up') return true;
+      if (state === 'down') return false;
+      if (state === 1) return true;
+      if (state === 0) return false;
+      if (state === '1') return true;
+      if (state === '0') return false;
+      if (state === 'opened') return true;
+      if (state === 'closed') return false;
+    }
   }
   return false;
 }
@@ -420,9 +424,7 @@ function isSameMessage (message, prototype, compareState = false) {
     if (prototype.on.code == message.code) return true;
   } else if (message.code && prototype.off) {
     if (prototype.off.code == message.code) return true;
-  }
-  // TODO: other kinds of espilight messages without id/unit
-  else if (message.type && prototype.type) {
+  } else if (message.type && prototype.type && prototype.message.id && message.message.id && prototype.message.unit && message.message.unit) {
     if (prototype.type == message.type &&
         prototype.message.id == message.message.id &&
         prototype.message.unit == message.message.unit) {
@@ -431,6 +433,12 @@ function isSameMessage (message, prototype, compareState = false) {
           return true;
         }
       } else return true;
+    }
+  } else if (message.type && prototype.type && prototype.message.systemcode && message.message.systemcode && prototype.message.unitcode && message.message.unitcode) {
+    if (prototype.type == message.type &&
+      prototype.message.unitcode == message.message.unitcode &&
+      prototype.message.systemcode == message.message.systemcode) {
+        return true;
     }
   }
   return false;
